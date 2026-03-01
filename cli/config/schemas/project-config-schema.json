@@ -1,0 +1,285 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/your-org/multi-cloud-deployer/schemas/project-config",
+  "title": "Project Configuration Schema",
+  "description": "Schema for .deployer/config.yaml - defines how an application should be deployed",
+  "type": "object",
+  "required": ["project", "components", "infrastructure"],
+  "properties": {
+    "project": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "description": "Project name (lowercase, alphanumeric, hyphens only)"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["backend", "frontend", "fullstack"],
+          "description": "Project type"
+        },
+        "description": {
+          "type": "string",
+          "description": "Project description"
+        }
+      }
+    },
+    "components": {
+      "type": "object",
+      "description": "Application components to deploy",
+      "properties": {
+        "backend": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["python-django", "nodejs-express", "ruby-rails", "java-spring"],
+              "description": "Backend framework type"
+            },
+            "python_version": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+$",
+              "description": "Python version (e.g., '3.10')"
+            },
+            "node_version": {
+              "type": "string",
+              "pattern": "^\\d+$",
+              "description": "Node.js version (e.g., '20')"
+            },
+            "requirements_file": {
+              "type": "string",
+              "description": "Python requirements file path"
+            },
+            "root_dir": {
+              "type": "string",
+              "description": "Root directory in the repository"
+            },
+            "services": {
+              "type": "array",
+              "description": "Backend services to run",
+              "items": {
+                "type": "object",
+                "required": ["name", "type", "command"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Service name"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["asgi", "wsgi", "grpc", "celery-worker", "celery-beat", "custom"],
+                    "description": "Service type"
+                  },
+                  "port": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 65535,
+                    "description": "Service port"
+                  },
+                  "command": {
+                    "type": "string",
+                    "description": "Command to start the service"
+                  },
+                  "concurrency": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Worker concurrency (for celery)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "webapp": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["react-vite", "react-cra", "vue", "angular", "nextjs"],
+              "description": "Frontend framework type"
+            },
+            "node_version": {
+              "type": "string",
+              "pattern": "^\\d+$",
+              "description": "Node.js version"
+            },
+            "package_manager": {
+              "type": "string",
+              "enum": ["npm", "yarn", "pnpm"],
+              "description": "Package manager"
+            },
+            "build_command": {
+              "type": "string",
+              "description": "Build command"
+            },
+            "build_output": {
+              "type": "string",
+              "description": "Build output directory"
+            },
+            "root_dir": {
+              "type": "string",
+              "description": "Root directory in the repository"
+            },
+            "env_file": {
+              "type": "string",
+              "description": "Environment file to use"
+            }
+          }
+        }
+      }
+    },
+    "infrastructure": {
+      "type": "object",
+      "description": "Infrastructure requirements",
+      "properties": {
+        "database": {
+          "type": "object",
+          "properties": {
+            "engine": {
+              "type": "string",
+              "enum": ["postgres", "mysql", "mariadb"],
+              "description": "Database engine"
+            },
+            "version": {
+              "type": "string",
+              "description": "Database version"
+            },
+            "name": {
+              "type": "string",
+              "description": "Database name"
+            },
+            "port": {
+              "type": "integer",
+              "description": "Database port"
+            }
+          }
+        },
+        "cache": {
+          "type": "object",
+          "properties": {
+            "engine": {
+              "type": "string",
+              "enum": ["redis", "memcached"],
+              "description": "Cache engine"
+            },
+            "version": {
+              "type": "string",
+              "description": "Cache version"
+            },
+            "port": {
+              "type": "integer",
+              "description": "Cache port"
+            }
+          }
+        },
+        "storage": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["s3", "azure-blob"],
+              "description": "Storage type"
+            },
+            "buckets": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Bucket name"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "description": "Bucket purpose"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "kubernetes": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable Kubernetes"
+            },
+            "type": {
+              "type": "string",
+              "enum": ["minikube", "eks", "aks"],
+              "description": "Kubernetes type"
+            },
+            "namespace": {
+              "type": "string",
+              "description": "Default namespace"
+            }
+          }
+        }
+      }
+    },
+    "secrets": {
+      "type": "object",
+      "description": "Secrets management configuration",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": ["aws-secrets-manager", "azure-key-vault"],
+          "description": "Secrets provider"
+        },
+        "prefix": {
+          "type": "string",
+          "description": "Secrets prefix/namespace"
+        },
+        "required": {
+          "type": "array",
+          "description": "Required secrets",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Secret name"
+              },
+              "description": {
+                "type": "string",
+                "description": "Secret description"
+              }
+            }
+          }
+        }
+      }
+    },
+    "monitoring": {
+      "type": "object",
+      "description": "Monitoring configuration",
+      "properties": {
+        "health_endpoints": {
+          "type": "object",
+          "description": "Health check endpoints"
+        },
+        "alerts": {
+          "type": "array",
+          "description": "Alert rules"
+        },
+        "logging": {
+          "type": "object",
+          "properties": {
+            "level": {
+              "type": "string",
+              "enum": ["DEBUG", "INFO", "WARNING", "ERROR"],
+              "description": "Log level"
+            },
+            "destination": {
+              "type": "string",
+              "enum": ["cloudwatch", "azure-monitor", "stdout"],
+              "description": "Log destination"
+            }
+          }
+        }
+      }
+    }
+  }
+}

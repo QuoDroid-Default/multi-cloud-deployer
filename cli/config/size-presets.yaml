@@ -1,0 +1,272 @@
+# Multi-Cloud Size Presets
+# Version: 1.0
+#
+# This file defines cloud-agnostic size presets (small, medium, large, xlarge)
+# Each preset maps to specific instance types and configurations for AWS and Azure
+#
+# Usage:
+#   In environment config (.deployer/environments/prod.yaml):
+#   size_preset: "large"
+#
+# The CLI will automatically select the appropriate cloud-specific configuration
+
+version: "1.0"
+
+presets:
+  # Small preset - Development and testing
+  # Estimated cost: $80-100/month (AWS) / $70-90/month (Azure)
+  small:
+    description: "Development and testing environments"
+    estimated_cost:
+      monthly_usd: "80-100"
+      breakdown:
+        compute: "$30-40"
+        database: "$20-30"
+        cache: "$15-20"
+        storage: "$10-15"
+        network: "$5-10"
+
+    aws:
+      compute:
+        instance_type: "t3.medium"      # 2 vCPU, 4 GB RAM
+        instance_count: 1
+        root_volume_size: 30            # GB
+        enable_monitoring: false
+
+      database:
+        engine: "postgres"
+        version: "15.4"
+        instance_class: "db.t3.micro"   # 2 vCPU, 1 GB RAM
+        allocated_storage: 20           # GB
+        max_allocated_storage: 100
+        multi_az: false
+        backup_retention_days: 7
+
+      cache:
+        engine: "redis"
+        version: "7.0"
+        node_type: "cache.t3.micro"     # 2 vCPU, 0.5 GB RAM
+        num_cache_nodes: 1
+        automatic_failover: false
+
+      storage:
+        s3_versioning: false
+        s3_lifecycle_days: 30
+
+    azure:
+      compute:
+        vm_size: "Standard_B2s"          # 2 vCPU, 4 GB RAM
+        instance_count: 1
+        os_disk_size_gb: 30
+
+      database:
+        sku_name: "B_Gen5_1"             # 1 vCore, 2 GB RAM
+        storage_mb: 20480                # 20 GB
+        backup_retention_days: 7
+        geo_redundant_backup: false
+
+      cache:
+        sku_name: "Basic"
+        family: "C"
+        capacity: 0                      # 250 MB
+
+      storage:
+        account_tier: "Standard"
+        account_replication_type: "LRS"  # Locally redundant
+
+  # Medium preset - Staging and demo environments
+  # Estimated cost: $200-250/month (AWS) / $180-220/month (Azure)
+  medium:
+    description: "Staging and demo environments"
+    estimated_cost:
+      monthly_usd: "200-250"
+      breakdown:
+        compute: "$80-100"
+        database: "$60-80"
+        cache: "$30-40"
+        storage: "$20-30"
+        network: "$10-20"
+
+    aws:
+      compute:
+        instance_type: "t3.large"       # 2 vCPU, 8 GB RAM
+        instance_count: 2
+        root_volume_size: 50
+        enable_monitoring: true
+
+      database:
+        engine: "postgres"
+        version: "15.4"
+        instance_class: "db.t3.small"   # 2 vCPU, 2 GB RAM
+        allocated_storage: 50
+        max_allocated_storage: 200
+        multi_az: false
+        backup_retention_days: 14
+
+      cache:
+        engine: "redis"
+        version: "7.0"
+        node_type: "cache.t3.small"     # 2 vCPU, 1.37 GB RAM
+        num_cache_nodes: 1
+        automatic_failover: false
+
+      storage:
+        s3_versioning: true
+        s3_lifecycle_days: 90
+
+    azure:
+      compute:
+        vm_size: "Standard_B2ms"         # 2 vCPU, 8 GB RAM
+        instance_count: 2
+        os_disk_size_gb: 50
+
+      database:
+        sku_name: "GP_Gen5_2"            # 2 vCores, 10 GB RAM
+        storage_mb: 51200                # 50 GB
+        backup_retention_days: 14
+        geo_redundant_backup: false
+
+      cache:
+        sku_name: "Standard"
+        family: "C"
+        capacity: 1                      # 1 GB
+
+      storage:
+        account_tier: "Standard"
+        account_replication_type: "GRS"  # Geo-redundant
+
+  # Large preset - Production environments
+  # Estimated cost: $500-600/month (AWS) / $450-550/month (Azure)
+  large:
+    description: "Production environments - high availability"
+    estimated_cost:
+      monthly_usd: "500-600"
+      breakdown:
+        compute: "$250-300"
+        database: "$150-180"
+        cache: "$60-80"
+        storage: "$30-40"
+        network: "$20-30"
+
+    aws:
+      compute:
+        instance_type: "m5.xlarge"      # 4 vCPU, 16 GB RAM
+        instance_count: 3
+        root_volume_size: 100
+        enable_monitoring: true
+
+      database:
+        engine: "postgres"
+        version: "15.4"
+        instance_class: "db.m5.large"   # 2 vCPU, 8 GB RAM
+        allocated_storage: 100
+        max_allocated_storage: 500
+        multi_az: true                  # High availability
+        backup_retention_days: 30
+        storage_encrypted: true
+
+      cache:
+        engine: "redis"
+        version: "7.0"
+        node_type: "cache.m5.large"     # 2 vCPU, 6.38 GB RAM
+        num_cache_nodes: 2
+        automatic_failover: true        # High availability
+
+      storage:
+        s3_versioning: true
+        s3_lifecycle_days: 365
+
+    azure:
+      compute:
+        vm_size: "Standard_D4s_v3"       # 4 vCPU, 16 GB RAM
+        instance_count: 3
+        os_disk_size_gb: 100
+
+      database:
+        sku_name: "GP_Gen5_4"            # 4 vCores, 20 GB RAM
+        storage_mb: 102400               # 100 GB
+        backup_retention_days: 30
+        geo_redundant_backup: true
+
+      cache:
+        sku_name: "Premium"
+        family: "P"
+        capacity: 1                      # 6 GB
+
+      storage:
+        account_tier: "Premium"
+        account_replication_type: "GRS"
+
+  # XLarge preset - Enterprise production
+  # Estimated cost: $1200-1500/month (AWS) / $1100-1400/month (Azure)
+  xlarge:
+    description: "Enterprise production - maximum performance"
+    estimated_cost:
+      monthly_usd: "1200-1500"
+      breakdown:
+        compute: "$600-750"
+        database: "$350-450"
+        cache: "$150-200"
+        storage: "$60-80"
+        network: "$40-60"
+
+    aws:
+      compute:
+        instance_type: "m5.2xlarge"     # 8 vCPU, 32 GB RAM
+        instance_count: 5
+        root_volume_size: 200
+        enable_monitoring: true
+
+      database:
+        engine: "postgres"
+        version: "15.4"
+        instance_class: "db.m5.2xlarge" # 8 vCPU, 32 GB RAM
+        allocated_storage: 500
+        max_allocated_storage: 2000
+        multi_az: true
+        backup_retention_days: 35
+        storage_encrypted: true
+        performance_insights: true
+
+      cache:
+        engine: "redis"
+        version: "7.0"
+        node_type: "cache.m5.xlarge"    # 4 vCPU, 12.93 GB RAM
+        num_cache_nodes: 3
+        automatic_failover: true
+
+      storage:
+        s3_versioning: true
+        s3_lifecycle_days: 730          # 2 years
+
+    azure:
+      compute:
+        vm_size: "Standard_D8s_v3"       # 8 vCPU, 32 GB RAM
+        instance_count: 5
+        os_disk_size_gb: 200
+
+      database:
+        sku_name: "GP_Gen5_8"            # 8 vCores, 40 GB RAM
+        storage_mb: 512000               # 500 GB
+        backup_retention_days: 35
+        geo_redundant_backup: true
+
+      cache:
+        sku_name: "Premium"
+        family: "P"
+        capacity: 2                      # 13 GB
+
+      storage:
+        account_tier: "Premium"
+        account_replication_type: "GZRS" # Geo-zone-redundant
+
+# Metadata
+metadata:
+  last_updated: "2026-03-01"
+  version: "1.0"
+  author: "DevOps Team"
+  notes: |
+    - Prices are estimates based on March 2026 pricing
+    - Actual costs may vary based on usage patterns
+    - Does not include data transfer costs
+    - Enterprise support plans not included

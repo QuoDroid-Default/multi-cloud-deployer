@@ -1,0 +1,15 @@
+# Example: Repository References
+# Copy this to your infrastructure repository: .deployer/repos.yaml
+
+version: "1.0"
+
+repositories:
+  backend:
+    url: "https://github.com/your-org/myapp-backend.git"
+    type: "python-django"
+    branch: "main"
+
+  frontend:
+    url: "https://github.com/your-org/myapp-frontend.git"
+    type: "react-vite"
+    branch: "main"

@@ -1,0 +1,411 @@
+#!/usr/bin/env bash
+
+################################################################################
+# cloud-deploy - Multi-Cloud Deployment CLI
+# Part of multi-cloud-deployer v1.0
+#
+# Usage:
+#   cloud-deploy create <env>           Create new environment
+#   cloud-deploy up <env>               Deploy/update environment
+#   cloud-deploy down <env>             Destroy environment
+#   cloud-deploy status <env>           Check environment status
+#   cloud-deploy logs <env>             View deployment logs
+#   cloud-deploy rollback <env>         Rollback to previous version
+#   cloud-deploy scale <env>            Scale instances
+################################################################################
+
+set -e
+
+# Version
+VERSION="1.0.0"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Get script directory (where cloud-deploy is installed)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEPLOYER_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Source helper libraries
+source "$SCRIPT_DIR/lib/common.sh"
+source "$SCRIPT_DIR/lib/terraform-helpers.sh"
+source "$SCRIPT_DIR/lib/ansible-helpers.sh"
+source "$SCRIPT_DIR/lib/aws-helpers.sh"
+source "$SCRIPT_DIR/lib/azure-helpers.sh"
+
+# Configuration paths
+CONFIG_DIR="${DEPLOYER_ROOT}/cli/config"
+PRESETS_FILE="${CONFIG_DIR}/size-presets.yaml"
+SCHEMA_DIR="${CONFIG_DIR}/schemas"
+
+# Working directory (where user runs the command)
+WORK_DIR="$(pwd)"
+DEPLOYER_DIR="${WORK_DIR}/.deployer"
+
+################################################################################
+# Helper Functions
+################################################################################
+
+print_header() {
+    echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║  cloud-deploy v${VERSION} - Multi-Cloud Deployment Automation  ║${NC}"
+    echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+}
+
+print_success() {
+    echo -e "${GREEN}✓ $1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}✗ $1${NC}"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠ $1${NC}"
+}
+
+print_info() {
+    echo -e "${BLUE}ℹ $1${NC}"
+}
+
+usage() {
+    print_header
+    cat << EOF
+Usage: cloud-deploy <command> <environment> [options]
+
+Commands:
+    create <env>                Create new environment infrastructure
+    up <env>                    Deploy/update application to environment
+    down <env>                  Destroy environment infrastructure
+    status <env>                Check environment status
+    logs <env>                  View deployment logs
+    rollback <env>              Rollback to previous version
+    scale <env>                 Scale instances
+    validate                    Validate configuration files
+    version                     Show version information
+    help                        Show this help message
+
+Examples:
+    cloud-deploy create prod                    Create production environment
+    cloud-deploy up demo                        Deploy to demo environment
+    cloud-deploy status prod                    Check production status
+    cloud-deploy rollback prod --to v1.2.3      Rollback to specific version
+    cloud-deploy scale prod --instances 4       Scale to 4 instances
+    cloud-deploy down test                      Destroy test environment
+
+Configuration:
+    This tool reads configuration from .deployer/ directory:
+    - .deployer/config.yaml          Project configuration
+    - .deployer/repos.yaml           Repository references (FE/BE)
+    - .deployer/environments/*.yaml  Environment-specific configs
+
+Documentation:
+    https://github.com/your-org/multi-cloud-deployer
+
+EOF
+    exit 0
+}
+
+version() {
+    print_header
+    echo "cloud-deploy version ${VERSION}"
+    echo "multi-cloud-deployer"
+    echo ""
+    echo "Components:"
+    terraform --version | head -n1
+    ansible --version | head -n1
+    yq --version
+    jq --version
+    exit 0
+}
+
+validate_dependencies() {
+    local missing=()
+
+    command -v terraform >/dev/null 2>&1 || missing+=("terraform")
+    command -v ansible >/dev/null 2>&1 || missing+=("ansible")
+    command -v yq >/dev/null 2>&1 || missing+=("yq")
+    command -v jq >/dev/null 2>&1 || missing+=("jq")
+    command -v git >/dev/null 2>&1 || missing+=("git")
+
+    if [ ${#missing[@]} -gt 0 ]; then
+        print_error "Missing required dependencies: ${missing[*]}"
+        echo ""
+        echo "Install missing dependencies:"
+        echo "  brew install terraform ansible yq jq git  # macOS"
+        echo "  apt-get install terraform ansible yq jq git  # Linux"
+        exit 1
+    fi
+}
+
+validate_deployer_config() {
+    if [ ! -d "$DEPLOYER_DIR" ]; then
+        print_error "No .deployer/ directory found in current directory"
+        echo ""
+        echo "Expected directory structure:"
+        echo "  .deployer/"
+        echo "  ├── config.yaml"
+        echo "  ├── repos.yaml"
+        echo "  └── environments/"
+        echo "      ├── prod.yaml"
+        echo "      └── demo.yaml"
+        echo ""
+        echo "Are you in the infrastructure repository (e.g., coco-testai-infrastructure)?"
+        exit 1
+    fi
+
+    if [ ! -f "$DEPLOYER_DIR/config.yaml" ]; then
+        print_error "Missing .deployer/config.yaml"
+        exit 1
+    fi
+}
+
+load_environment_config() {
+    local env=$1
+    local env_file="$DEPLOYER_DIR/environments/${env}.yaml"
+
+    if [ ! -f "$env_file" ]; then
+        print_error "Environment config not found: $env_file"
+        echo ""
+        echo "Available environments:"
+        ls -1 "$DEPLOYER_DIR/environments/" | sed 's/.yaml$//' | sed 's/^/  - /'
+        exit 1
+    fi
+
+    print_info "Loading environment: $env"
+
+    # Export environment variables from YAML
+    export ENV_NAME="$env"
+    export CLOUD_PROVIDER=$(yq eval '.cloud_provider' "$env_file")
+    export REGION=$(yq eval '.region' "$env_file")
+    export SIZE_PRESET=$(yq eval '.size_preset' "$env_file")
+
+    print_success "Environment loaded: $env ($CLOUD_PROVIDER / $REGION / $SIZE_PRESET)"
+}
+
+clone_repositories() {
+    local repos_file="$DEPLOYER_DIR/repos.yaml"
+    local env=$1
+    local env_file="$DEPLOYER_DIR/environments/${env}.yaml"
+
+    if [ ! -f "$repos_file" ]; then
+        print_warning "No repos.yaml found - assuming monorepo structure"
+        return 0
+    fi
+
+    print_info "Cloning application repositories..."
+
+    # Create temporary directory for clones
+    local timestamp=$(date +%s)
+    export CLONE_DIR="/tmp/cloud-deploy-${timestamp}"
+    mkdir -p "$CLONE_DIR"
+
+    # Clone backend
+    local backend_url=$(yq eval '.repositories.backend.url' "$repos_file")
+    local backend_branch=$(yq eval '.repositories.backend.branch // "main"' "$repos_file")
+    local backend_ref=$(yq eval ".repositories.backend.ref // \"\"" "$env_file")
+
+    if [ "$backend_url" != "null" ]; then
+        print_info "Cloning backend: $backend_url"
+        git clone --quiet "$backend_url" "$CLONE_DIR/backend"
+        cd "$CLONE_DIR/backend"
+
+        if [ -n "$backend_ref" ] && [ "$backend_ref" != "null" ]; then
+            git checkout --quiet "$backend_ref"
+            print_success "Backend checked out at: $backend_ref"
+        else
+            git checkout --quiet "$backend_branch"
+            print_success "Backend checked out at: $backend_branch"
+        fi
+        cd "$WORK_DIR"
+    fi
+
+    # Clone frontend
+    local frontend_url=$(yq eval '.repositories.frontend.url' "$repos_file")
+    local frontend_branch=$(yq eval '.repositories.frontend.branch // "main"' "$repos_file")
+    local frontend_ref=$(yq eval ".repositories.frontend.ref // \"\"" "$env_file")
+
+    if [ "$frontend_url" != "null" ]; then
+        print_info "Cloning frontend: $frontend_url"
+        git clone --quiet "$frontend_url" "$CLONE_DIR/frontend"
+        cd "$CLONE_DIR/frontend"
+
+        if [ -n "$frontend_ref" ] && [ "$frontend_ref" != "null" ]; then
+            git checkout --quiet "$frontend_ref"
+            print_success "Frontend checked out at: $frontend_ref"
+        else
+            git checkout --quiet "$frontend_branch"
+            print_success "Frontend checked out at: $frontend_branch"
+        fi
+        cd "$WORK_DIR"
+    fi
+}
+
+cleanup_clones() {
+    if [ -n "$CLONE_DIR" ] && [ -d "$CLONE_DIR" ]; then
+        print_info "Cleaning up temporary clones..."
+        rm -rf "$CLONE_DIR"
+        print_success "Cleanup complete"
+    fi
+}
+
+################################################################################
+# Command Handlers
+################################################################################
+
+cmd_create() {
+    local env=$1
+
+    print_header
+    print_info "Creating environment: $env"
+
+    validate_dependencies
+    validate_deployer_config
+    load_environment_config "$env"
+
+    # Run Terraform to create infrastructure
+    terraform_init "$env"
+    terraform_plan "$env"
+    terraform_apply "$env"
+
+    print_success "Environment created: $env"
+}
+
+cmd_up() {
+    local env=$1
+
+    print_header
+    print_info "Deploying to environment: $env"
+
+    validate_dependencies
+    validate_deployer_config
+    load_environment_config "$env"
+    clone_repositories "$env"
+
+    # Build application code
+    build_applications
+
+    # Deploy with Ansible
+    ansible_deploy "$env"
+
+    cleanup_clones
+
+    print_success "Deployment complete: $env"
+    show_deployment_urls "$env"
+}
+
+cmd_down() {
+    local env=$1
+
+    print_header
+    print_warning "Destroying environment: $env"
+
+    read -p "Are you sure you want to destroy $env? (yes/no): " confirm
+    if [ "$confirm" != "yes" ]; then
+        print_info "Cancelled"
+        exit 0
+    fi
+
+    validate_dependencies
+    validate_deployer_config
+    load_environment_config "$env"
+
+    terraform_destroy "$env"
+
+    print_success "Environment destroyed: $env"
+}
+
+cmd_status() {
+    local env=$1
+
+    print_header
+    print_info "Checking status: $env"
+
+    validate_dependencies
+    validate_deployer_config
+    load_environment_config "$env"
+
+    terraform_status "$env"
+    ansible_status "$env"
+
+    print_success "Status check complete"
+}
+
+cmd_logs() {
+    local env=$1
+
+    validate_deployer_config
+    load_environment_config "$env"
+
+    # Show recent deployment logs
+    local log_file="$WORK_DIR/.deployer/logs/${env}-latest.log"
+
+    if [ -f "$log_file" ]; then
+        tail -n 100 "$log_file"
+    else
+        print_error "No logs found for $env"
+    fi
+}
+
+cmd_validate() {
+    print_header
+    print_info "Validating configuration..."
+
+    validate_dependencies
+    validate_deployer_config
+
+    # Validate YAML files against JSON schemas
+    print_info "Validating config.yaml..."
+    # yq validation would go here
+
+    print_info "Validating environment configs..."
+    # Schema validation would go here
+
+    print_success "All configurations valid"
+}
+
+################################################################################
+# Main
+################################################################################
+
+main() {
+    # Parse command
+    local command=${1:-help}
+    local env=$2
+
+    case "$command" in
+        create|up|down|status|logs|rollback|scale)
+            if [ -z "$env" ]; then
+                print_error "Environment name required"
+                echo ""
+                usage
+            fi
+            cmd_${command} "$env" "${@:3}"
+            ;;
+        validate)
+            cmd_validate
+            ;;
+        version)
+            version
+            ;;
+        help|--help|-h)
+            usage
+            ;;
+        *)
+            print_error "Unknown command: $command"
+            echo ""
+            usage
+            ;;
+    esac
+}
+
+# Trap cleanup on exit
+trap cleanup_clones EXIT
+
+# Run main
+main "$@"

@@ -1,0 +1,33 @@
+---
+# Multi-Cloud Deployer - Fullstack Deployment Playbook
+# Deploys Django backend + React frontend + supporting services
+
+- name: Deploy fullstack application
+  hosts: app_servers
+  become: yes
+  gather_facts: yes
+
+  vars:
+    app_user: "app"
+    app_dir: "/opt/app"
+    backend_dir: "{{ app_dir }}/backend"
+    frontend_dir: "{{ app_dir}/frontend"
+
+  roles:
+    - role: python-django
+      when: backend_configured
+
+    - role: react-vite
+      when: frontend_configured
+
+    - role: nginx
+      when: true
+
+  tasks:
+    - name: Display deployment summary
+      debug:
+        msg: |
+          Deployment complete for {{ env_name }}
+          Backend: {{ backend_dir }}
+          Frontend: {{ frontend_dir }}
+          Check health: http://{{ ansible_default_ipv4.address }}/api/health/

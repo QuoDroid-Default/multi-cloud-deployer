@@ -1,0 +1,163 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/your-org/multi-cloud-deployer/schemas/environment",
+  "title": "Environment Configuration Schema",
+  "description": "Schema for .deployer/environments/{env}.yaml files",
+  "type": "object",
+  "required": ["environment", "cloud_provider", "region", "size_preset"],
+  "properties": {
+    "environment": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Environment name (prod, demo, test, etc.)"
+    },
+    "cloud_provider": {
+      "type": "string",
+      "enum": ["aws", "azure"],
+      "description": "Cloud provider"
+    },
+    "region": {
+      "type": "string",
+      "description": "Cloud region (e.g., us-east-1, eastus)"
+    },
+    "size_preset": {
+      "type": "string",
+      "enum": ["small", "medium", "large", "xlarge"],
+      "description": "Size preset from size-presets.yaml"
+    },
+    "repositories": {
+      "type": "object",
+      "description": "Override repository refs for this environment",
+      "properties": {
+        "backend": {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "type": "string",
+              "description": "Git tag or commit hash"
+            },
+            "branch": {
+              "type": "string",
+              "description": "Git branch"
+            }
+          }
+        },
+        "frontend": {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "type": "string",
+              "description": "Git tag or commit hash"
+            },
+            "branch": {
+              "type": "string",
+              "description": "Git branch"
+            }
+          }
+        }
+      }
+    },
+    "domain": {
+      "type": "object",
+      "description": "Domain configuration",
+      "properties": {
+        "root": {
+          "type": "string",
+          "format": "hostname",
+          "description": "Root domain"
+        },
+        "webapp": {
+          "type": "string",
+          "format": "hostname",
+          "description": "Web app domain"
+        },
+        "api": {
+          "type": "string",
+          "format": "hostname",
+          "description": "API domain"
+        },
+        "ssl": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "enum": ["acm", "letsencrypt", "azure-cert"],
+              "description": "SSL certificate provider"
+            },
+            "auto_renew": {
+              "type": "boolean",
+              "description": "Auto-renew certificates"
+            }
+          }
+        }
+      }
+    },
+    "infrastructure": {
+      "type": "object",
+      "description": "Infrastructure overrides",
+      "properties": {
+        "database": {
+          "type": "object",
+          "properties": {
+            "backup_retention_days": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 35
+            },
+            "multi_az": {
+              "type": "boolean"
+            },
+            "storage_encrypted": {
+              "type": "boolean"
+            }
+          }
+        },
+        "cache": {
+          "type": "object",
+          "properties": {
+            "automatic_failover": {
+              "type": "boolean"
+            },
+            "num_cache_nodes": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "compute": {
+          "type": "object",
+          "properties": {
+            "autoscaling": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "min_instances": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "max_instances": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "target_cpu": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "tags": {
+      "type": "object",
+      "description": "Cloud resource tags",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  }
+}

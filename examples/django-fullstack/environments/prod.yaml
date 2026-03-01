@@ -1,0 +1,45 @@
+# Example: Production Environment
+# Copy this to your infrastructure repository: .deployer/environments/prod.yaml
+
+environment: prod
+cloud_provider: aws
+region: us-east-1
+size_preset: large
+
+# Pin production to stable releases
+repositories:
+  backend:
+    ref: "v1.0.0"
+  frontend:
+    ref: "v1.0.0"
+
+domain:
+  root: "example.com"
+  webapp: "app.example.com"
+  api: "api.example.com"
+
+  ssl:
+    provider: "acm"
+    auto_renew: true
+
+infrastructure:
+  database:
+    backup_retention_days: 30
+    multi_az: true
+    storage_encrypted: true
+
+  cache:
+    automatic_failover: true
+    num_cache_nodes: 2
+
+  compute:
+    autoscaling:
+      enabled: true
+      min_instances: 2
+      max_instances: 6
+      target_cpu: 70
+
+tags:
+  Environment: "Production"
+  Project: "MyApp"
+  ManagedBy: "cloud-deploy"

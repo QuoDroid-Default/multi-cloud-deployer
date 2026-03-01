@@ -1,0 +1,76 @@
+# Example: Django + React Fullstack Application
+# Copy this to your infrastructure repository: .deployer/config.yaml
+
+project:
+  name: "my-fullstack-app"
+  type: "fullstack"
+  description: "Django backend + React frontend application"
+
+components:
+  backend:
+    type: "python-django"
+    python_version: "3.10"
+    requirements_file: "requirements.txt"
+    root_dir: "."
+
+    services:
+      - name: "daphne"
+        type: "asgi"
+        port: 8000
+        command: "daphne -b 0.0.0.0 -p 8000 myapp.asgi:application"
+
+      - name: "celery-worker"
+        type: "celery-worker"
+        concurrency: 4
+        command: "celery -A myapp worker --loglevel=info"
+
+      - name: "celery-beat"
+        type: "celery-beat"
+        command: "celery -A myapp beat --loglevel=info"
+
+  webapp:
+    type: "react-vite"
+    node_version: "20"
+    package_manager: "npm"
+    build_command: "npm run build"
+    build_output: "dist"
+    root_dir: "."
+
+infrastructure:
+  database:
+    engine: "postgres"
+    version: "15.4"
+    name: "myapp_db"
+    port: 5432
+
+  cache:
+    engine: "redis"
+    version: "7.0"
+    port: 6379
+
+  storage:
+    type: "s3"
+    buckets:
+      - name: "artifacts"
+        purpose: "Application artifacts"
+      - name: "static"
+        purpose: "Static files"
+
+secrets:
+  provider: "aws-secrets-manager"
+  prefix: "myapp"
+
+  required:
+    - name: "DJANGO_SECRET_KEY"
+      description: "Django secret key"
+
+    - name: "DATABASE_PASSWORD"
+      description: "Database password"
+
+monitoring:
+  health_endpoints:
+    backend: "/api/health/"
+
+  logging:
+    level: "INFO"
+    destination: "cloudwatch"

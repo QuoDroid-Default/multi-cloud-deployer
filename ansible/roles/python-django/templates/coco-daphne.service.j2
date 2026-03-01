@@ -1,0 +1,16 @@
+[Unit]
+Description=Coco TestAI ASGI Server (Daphne)
+After=network.target
+
+[Service]
+Type=notify
+User={{ app_user }}
+Group={{ app_user }}
+WorkingDirectory={{ backend_dir }}
+Environment="PATH={{ backend_dir }}/venv/bin"
+ExecStart={{ backend_dir }}/venv/bin/daphne -b 0.0.0.0 -p 8000 coco_testai.asgi:application
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

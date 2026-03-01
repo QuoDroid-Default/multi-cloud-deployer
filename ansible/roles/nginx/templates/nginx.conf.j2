@@ -1,0 +1,42 @@
+upstream backend {
+    server 127.0.0.1:8000;
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    # Frontend (React)
+    location / {
+        root {{ frontend_dir }};
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Backend API
+    location /api/ {
+        proxy_pass http://backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # WebSocket
+    location /ws/ {
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
+
+    # Static files
+    location /static/ {
+        alias {{ backend_dir }}/staticfiles/;
+    }
+
+    # Media files
+    location /media/ {
+        alias {{ backend_dir }}/media/;
+    }
+}

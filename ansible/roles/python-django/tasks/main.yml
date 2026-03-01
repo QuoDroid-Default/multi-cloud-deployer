@@ -1,0 +1,102 @@
+---
+# Python Django Role - Main Tasks
+
+- name: Install system dependencies
+  apt:
+    name:
+      - python3
+      - python3-pip
+      - python3-venv
+      - python3-dev
+      - build-essential
+      - libpq-dev
+      - nginx
+      - supervisor
+    state: present
+    update_cache: yes
+
+- name: Create app user
+  user:
+    name: "{{ app_user }}"
+    shell: /bin/bash
+    create_home: yes
+
+- name: Create application directory
+  file:
+    path: "{{ backend_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+
+- name: Copy backend code from clone directory
+  synchronize:
+    src: "{{ clone_dir }}/backend/"
+    dest: "{{ backend_dir }}/"
+    delete: yes
+    recursive: yes
+  delegate_to: localhost
+  become: no
+
+- name: Create Python virtual environment
+  command: python3 -m venv {{ backend_dir }}/venv
+  args:
+    creates: "{{ backend_dir }}/venv/bin/activate"
+  become_user: "{{ app_user }}"
+
+- name: Install Python dependencies
+  pip:
+    requirements: "{{ backend_dir }}/requirements.txt"
+    virtualenv: "{{ backend_dir }}/venv"
+  become_user: "{{ app_user }}"
+
+- name: Run Django migrations
+  django_manage:
+    command: migrate
+    app_path: "{{ backend_dir }}"
+    virtualenv: "{{ backend_dir }}/venv"
+  become_user: "{{ app_user }}"
+
+- name: Collect static files
+  django_manage:
+    command: collectstatic
+    app_path: "{{ backend_dir }}"
+    virtualenv: "{{ backend_dir }}/venv"
+  become_user: "{{ app_user }}"
+
+- name: Create systemd service files
+  template:
+    src: "{{ item }}.service.j2"
+    dest: "/etc/systemd/system/{{ item }}.service"
+    mode: '0644'
+  loop:
+    - coco-daphne
+    - coco-celery-worker
+    - coco-celery-beat
+  notify:
+    - reload systemd
+    - restart services
+
+- name: Enable and start services
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:
+    - coco-daphne
+    - coco-celery-worker
+    - coco-celery-beat
+
+handlers:
+  - name: reload systemd
+    systemd:
+      daemon_reload: yes
+
+  - name: restart services
+    systemd:
+      name: "{{ item }}"
+      state: restarted
+    loop:
+      - coco-daphne
+      - coco-celery-worker
+      - coco-celery-beat

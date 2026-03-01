@@ -1,0 +1,25 @@
+---
+# React Vite Role - Main Tasks
+
+- name: Install Node.js
+  apt:
+    name:
+      - nodejs
+      - npm
+    state: present
+
+- name: Create frontend directory
+  file:
+    path: "{{ frontend_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    mode: '0755'
+
+- name: Copy built frontend from clone directory
+  synchronize:
+    src: "{{ clone_dir }}/frontend/dist/"
+    dest: "{{ frontend_dir }}/"
+    delete: yes
+    recursive: yes
+  delegate_to: localhost
+  become: no

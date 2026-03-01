@@ -1,0 +1,16 @@
+[Unit]
+Description=Coco TestAI Celery Beat Scheduler
+After=network.target
+
+[Service]
+Type=simple
+User={{ app_user }}
+Group={{ app_user }}
+WorkingDirectory={{ backend_dir }}
+Environment="PATH={{ backend_dir }}/venv/bin"
+ExecStart={{ backend_dir }}/venv/bin/celery -A coco_testai beat --loglevel=info
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
