@@ -34,6 +34,11 @@ provider "aws" {
 provider "azurerm" {
   features {}
   skip_provider_registration = true
+
+  # Skip authentication when not using Azure
+  use_cli = false
+  use_msi = false
+  use_oidc = false
 }
 
 # Local variables
