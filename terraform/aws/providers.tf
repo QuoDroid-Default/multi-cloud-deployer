@@ -1,5 +1,5 @@
 # AWS Provider Configuration
-# This directory is used exclusively for AWS deployments
+# This directory contains ONLY AWS resources - no Azure provider needed
 
 terraform {
   required_version = ">= 1.6"
@@ -8,6 +8,10 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
     }
   }
 

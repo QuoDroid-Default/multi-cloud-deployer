@@ -5,6 +5,16 @@ variable "environment" {
   type        = string
 }
 
+variable "cloud_provider" {
+  description = "Cloud provider (always 'azure' for this configuration)"
+  type        = string
+  default     = "azure"
+  validation {
+    condition     = var.cloud_provider == "azure"
+    error_message = "This configuration only supports Azure. Use terraform/aws/ for AWS deployments."
+  }
+}
+
 variable "region" {
   description = "Azure region"
   type        = string

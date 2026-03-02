@@ -2,68 +2,79 @@
 
 output "vpc_id" {
   description = "Virtual Network ID"
-  value       = module.network.vpc_id
+  value       = azurerm_virtual_network.main.id
+}
+
+output "resource_group_name" {
+  description = "Resource Group name"
+  value       = azurerm_resource_group.main.name
 }
 
 output "instance_ids" {
   description = "VM instance IDs"
-  value       = module.compute.instance_ids
+  value       = azurerm_linux_virtual_machine.app[*].id
 }
 
 output "instance_ips" {
   description = "VM instance private IPs"
-  value       = module.compute.instance_private_ips
+  value       = azurerm_linux_virtual_machine.app[*].private_ip_address
 }
 
 output "instance_public_ips" {
-  description = "VM instance public IPs"
-  value       = module.compute.instance_public_ips
+  description = "VM instance public IPs (empty for private NICs)"
+  value       = []
 }
 
 output "database_endpoint" {
   description = "PostgreSQL endpoint"
-  value       = module.database.endpoint
+  value       = azurerm_postgresql_flexible_server.main.fqdn
   sensitive   = true
 }
 
 output "database_port" {
   description = "Database port"
-  value       = module.database.port
+  value       = 5432
 }
 
 output "database_name" {
   description = "Database name"
-  value       = module.database.database_name
+  value       = azurerm_postgresql_flexible_server_database.main.name
+}
+
+output "database_password" {
+  description = "Database password"
+  value       = random_password.db.result
+  sensitive   = true
 }
 
 output "cache_endpoint" {
   description = "Redis cache endpoint"
-  value       = module.cache.endpoint
+  value       = azurerm_redis_cache.main.hostname
 }
 
 output "cache_port" {
   description = "Cache port"
-  value       = module.cache.port
+  value       = 6380
 }
 
 output "storage_bucket_names" {
   description = "Storage container names"
-  value       = module.storage.bucket_names
+  value       = [for c in azurerm_storage_container.main : c.name]
 }
 
 output "storage_bucket_urls" {
   description = "Storage container URLs"
-  value       = module.storage.bucket_urls
+  value       = [for c in azurerm_storage_container.main : "https://${azurerm_storage_account.main.name}.blob.core.windows.net/${c.name}"]
 }
 
 output "cdn_domain" {
   description = "CDN domain name"
-  value       = var.enable_cdn ? module.cdn[0].domain_name : ""
+  value       = var.enable_cdn && length(azurerm_cdn_endpoint.main) > 0 ? azurerm_cdn_endpoint.main[0].fqdn : ""
 }
 
 output "dns_nameservers" {
   description = "DNS nameservers"
-  value       = var.enable_dns ? module.dns[0].nameservers : []
+  value       = var.enable_dns && length(azurerm_dns_zone.main) > 0 ? azurerm_dns_zone.main[0].name_servers : []
 }
 
 output "deployment_summary" {

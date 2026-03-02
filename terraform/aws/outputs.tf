@@ -2,68 +2,74 @@
 
 output "vpc_id" {
   description = "VPC ID"
-  value       = module.network.vpc_id
+  value       = aws_vpc.main.id
 }
 
 output "instance_ids" {
   description = "EC2 instance IDs"
-  value       = module.compute.instance_ids
+  value       = aws_instance.app[*].id
 }
 
 output "instance_ips" {
   description = "EC2 instance private IPs"
-  value       = module.compute.instance_private_ips
+  value       = aws_instance.app[*].private_ip
 }
 
 output "instance_public_ips" {
-  description = "EC2 instance public IPs"
-  value       = module.compute.instance_public_ips
+  description = "EC2 instance public IPs (empty for private subnets)"
+  value       = []
 }
 
 output "database_endpoint" {
   description = "RDS endpoint"
-  value       = module.database.endpoint
+  value       = aws_db_instance.main.endpoint
   sensitive   = true
 }
 
 output "database_port" {
   description = "Database port"
-  value       = module.database.port
+  value       = aws_db_instance.main.port
 }
 
 output "database_name" {
   description = "Database name"
-  value       = module.database.database_name
+  value       = aws_db_instance.main.db_name
+}
+
+output "database_password" {
+  description = "Database password"
+  value       = random_password.db.result
+  sensitive   = true
 }
 
 output "cache_endpoint" {
   description = "ElastiCache endpoint"
-  value       = module.cache.endpoint
+  value       = aws_elasticache_cluster.main.cache_nodes[0].address
 }
 
 output "cache_port" {
   description = "Cache port"
-  value       = module.cache.port
+  value       = aws_elasticache_cluster.main.cache_nodes[0].port
 }
 
 output "storage_bucket_names" {
   description = "S3 bucket names"
-  value       = module.storage.bucket_names
+  value       = [for b in aws_s3_bucket.main : b.id]
 }
 
 output "storage_bucket_urls" {
   description = "S3 bucket URLs"
-  value       = module.storage.bucket_urls
+  value       = [for b in aws_s3_bucket.main : "s3://${b.id}"]
 }
 
 output "cdn_domain" {
   description = "CloudFront domain name"
-  value       = var.enable_cdn ? module.cdn[0].domain_name : ""
+  value       = var.enable_cdn && length(aws_cloudfront_distribution.main) > 0 ? aws_cloudfront_distribution.main[0].domain_name : ""
 }
 
 output "dns_nameservers" {
   description = "Route53 nameservers"
-  value       = var.enable_dns ? module.dns[0].nameservers : []
+  value       = var.enable_dns && length(aws_route53_zone.main) > 0 ? aws_route53_zone.main[0].name_servers : []
 }
 
 output "deployment_summary" {
