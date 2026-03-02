@@ -12,5 +12,8 @@ variable "security_group_ids" { type = list(string) }
 variable "multi_az" { type = bool }
 variable "backup_retention_days" { type = number }
 variable "storage_encrypted" { type = bool }
-variable "resource_group_name" { type = string; default = "" }
+variable "resource_group_name" {
+  type    = string
+  default = ""
+}
 variable "tags" { type = map(string) }
