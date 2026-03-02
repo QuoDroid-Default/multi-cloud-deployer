@@ -67,7 +67,10 @@ clone_repository() {
     if [ -d "$INSTALL_DIR" ]; then
         print_info "Updating existing installation..."
         cd "$INSTALL_DIR"
-        git pull origin main
+        # Force clean update to ensure latest version
+        git fetch origin
+        git reset --hard origin/main
+        git clean -fd
     else
         git clone "$REPO" "$INSTALL_DIR"
     fi
