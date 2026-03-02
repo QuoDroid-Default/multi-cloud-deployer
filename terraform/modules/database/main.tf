@@ -42,23 +42,22 @@ resource "random_password" "db" {
   special = true
 }
 
-resource "azurerm_postgresql_server" "main" {
+resource "azurerm_postgresql_flexible_server" "main" {
   count = local.is_aws ? 0 : 1
 
   name                = "${var.environment}-db"
   location            = var.region
   resource_group_name = var.resource_group_name
 
-  sku_name = var.instance_class
+  sku_name   = var.instance_class
+  version    = var.engine_version
+  storage_mb = var.allocated_storage * 1024
 
-  storage_mb                   = var.allocated_storage * 1024
+  administrator_login    = "dbadmin"
+  administrator_password = random_password.db_azure[0].result
+
   backup_retention_days        = var.backup_retention_days
   geo_redundant_backup_enabled = var.multi_az
-
-  administrator_login          = "dbadmin"
-  administrator_login_password = random_password.db_azure[0].result
-  version                      = var.engine_version
-  ssl_enforcement_enabled      = true
 
   tags = var.tags
 }

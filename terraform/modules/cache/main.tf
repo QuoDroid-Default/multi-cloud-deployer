@@ -38,8 +38,8 @@ resource "azurerm_redis_cache" "main" {
   family              = "C"
   sku_name            = "Standard"
 
-  enable_non_ssl_port = false
-  minimum_tls_version = "1.2"
+  public_network_access_enabled = false
+  minimum_tls_version           = "1.2"
 
   tags = var.tags
 }
