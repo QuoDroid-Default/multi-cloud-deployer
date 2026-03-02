@@ -31,10 +31,14 @@ provider "aws" {
 provider "azurerm" {
   features {}
 
-  # These will be set via environment variables:
-  # ARM_SUBSCRIPTION_ID, ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_TENANT_ID
-  # For AWS deployments, dummy values are acceptable since no Azure resources are created
+  # Disable all authentication methods when not using Azure
   skip_provider_registration = true
+  use_cli                   = false
+  use_msi                   = false
+  use_oidc                  = false
+
+  # Dummy credentials required for provider initialization
+  # These will be set via environment variables when cloud_provider = "aws"
 }
 
 # Local variables
