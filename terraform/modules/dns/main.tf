@@ -3,7 +3,10 @@
 variable "environment" { type = string }
 variable "cloud_provider" { type = string }
 variable "zone_name" { type = string }
-variable "records" { type = list(any); default = [] }
+variable "records" {
+  type    = list(any)
+  default = []
+}
 variable "tags" { type = map(string) }
 
 output "nameservers" {
