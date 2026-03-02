@@ -16,9 +16,13 @@ terraform_init() {
 
     cd "$tf_dir"
 
-    # Handle Azure credentials based on cloud provider
+    # Copy the appropriate provider configuration based on cloud_provider
+    # This is the 2026 best practice: only declare providers you're actually using
     if [ "$CLOUD_PROVIDER" == "azure" ]; then
-        # Azure deployment - require real credentials
+        print_info "Configuring Azure provider..."
+        cp providers-azure.tf.template providers.tf
+
+        # Validate Azure credentials
         if [ -z "$ARM_SUBSCRIPTION_ID" ] || [ -z "$ARM_CLIENT_ID" ]; then
             print_error "Azure credentials not configured!"
             echo "Set these environment variables:"
@@ -28,17 +32,10 @@ terraform_init() {
             echo "  ARM_TENANT_ID"
             exit 1
         fi
-        print_info "Using Azure credentials from environment"
     else
-        # AWS deployment - set dummy Azure credentials only if not already set
-        # This allows the azurerm provider to initialize without actual authentication
-        if [ -z "$ARM_SUBSCRIPTION_ID" ]; then
-            export ARM_SUBSCRIPTION_ID="00000000-0000-0000-0000-000000000000"
-            export ARM_CLIENT_ID="00000000-0000-0000-0000-000000000000"
-            export ARM_CLIENT_SECRET="dummy-secret-not-used"
-            export ARM_TENANT_ID="00000000-0000-0000-0000-000000000000"
-            print_info "Azure provider initialized with placeholder credentials (AWS deployment)"
-        fi
+        # AWS deployment
+        print_info "Configuring AWS provider..."
+        cp providers-aws.tf.template providers.tf
     fi
 
     # Initialize with backend configuration
