@@ -21,11 +21,19 @@ provider "aws" {
 
 # Azure provider declared for module compatibility
 # All Azure resources have count = 0 when cloud_provider = "aws"
+# Dummy credentials provided to prevent authentication attempts
 provider "azurerm" {
   features {}
   skip_provider_registration = true
 
-  # Disable all authentication methods to prevent credential lookups
+  # Provide dummy credentials to satisfy provider initialization
+  # These are never used because all Azure resources have count = 0
+  subscription_id = "00000000-0000-0000-0000-000000000000"
+  tenant_id       = "00000000-0000-0000-0000-000000000000"
+  client_id       = "00000000-0000-0000-0000-000000000000"
+  client_secret   = "dummy-secret-not-used"
+
+  # Disable all automatic authentication methods
   use_cli = false
   use_msi = false
   use_oidc = false
