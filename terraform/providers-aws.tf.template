@@ -1,5 +1,6 @@
 # AWS Provider Configuration
 # This file is used for AWS deployments (cloud_provider = "aws")
+# Note: Azure provider declared but not used (count = 0 on all Azure resources)
 
 terraform {
   required_providers {
@@ -7,9 +8,25 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 3.0"
+    }
   }
 }
 
 provider "aws" {
   region = var.region
+}
+
+# Azure provider declared for module compatibility
+# All Azure resources have count = 0 when cloud_provider = "aws"
+provider "azurerm" {
+  features {}
+  skip_provider_registration = true
+
+  # Disable all authentication methods to prevent credential lookups
+  use_cli = false
+  use_msi = false
+  use_oidc = false
 }
