@@ -4,6 +4,26 @@
 # Terraform helper functions
 ################################################################################
 
+cleanup_orphaned_resources() {
+    local env=$1
+
+    print_info "Cleaning up orphaned resources from previous failed deployments..."
+
+    if [ "$CLOUD_PROVIDER" == "aws" ]; then
+        # Delete orphaned DB subnet group
+        aws rds delete-db-subnet-group \
+            --db-subnet-group-name "${env}-db-subnet-group" \
+            --region "$REGION" 2>/dev/null || true
+
+        # Delete orphaned ElastiCache subnet group
+        aws elasticache delete-cache-subnet-group \
+            --cache-subnet-group-name "${env}-cache-subnet-group" \
+            --region "$REGION" 2>/dev/null || true
+
+        print_success "Cleanup complete"
+    fi
+}
+
 terraform_init() {
     local env=$1
 
