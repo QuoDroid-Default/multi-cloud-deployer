@@ -4,35 +4,15 @@
 terraform {
   required_version = ">= 1.6"
 
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0"
-    }
-  }
+  # Providers are declared in separate files:
+  # - providers-aws.tf.template (copied to providers.tf for AWS deployments)
+  # - providers-azure.tf.template (copied to providers.tf for Azure deployments)
+  # The cloud-deploy script copies the appropriate file during terraform_init()
 
   backend "local" {
     # Backend configuration passed via CLI
     # -backend-config="path=..."
   }
-}
-
-# Provider configuration
-provider "aws" {
-  region = var.region
-}
-
-provider "azurerm" {
-  features {}
-  skip_provider_registration = true
-
-  # Credentials set via ARM_* environment variables
-  # For AWS-only deployments, dummy values are auto-set by cloud-deploy
-  # For Azure deployments, real credentials must be provided
 }
 
 # Local variables
