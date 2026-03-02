@@ -1,12 +1,19 @@
 # Azure Provider Configuration
-# This file is used for Azure deployments (cloud_provider = "azure")
+# This directory is used exclusively for Azure deployments
 
 terraform {
+  required_version = ">= 1.6"
+
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 3.0"
     }
+  }
+
+  backend "local" {
+    # Backend configuration passed via CLI
+    # -backend-config="path=..."
   }
 }
 

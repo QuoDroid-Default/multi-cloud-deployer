@@ -1,27 +1,18 @@
-# Multi-Cloud Deployment System - Variables
+# AWS Infrastructure Variables
 
 variable "environment" {
   description = "Environment name (prod, demo, test, etc.)"
   type        = string
 }
 
-variable "cloud_provider" {
-  description = "Cloud provider (aws or azure)"
-  type        = string
-  validation {
-    condition     = contains(["aws", "azure"], var.cloud_provider)
-    error_message = "Cloud provider must be 'aws' or 'azure'."
-  }
-}
-
 variable "region" {
-  description = "Cloud region"
+  description = "AWS region"
   type        = string
 }
 
 # Compute variables
 variable "instance_type" {
-  description = "Instance type (from size preset)"
+  description = "EC2 instance type (from size preset)"
   type        = string
 }
 
@@ -45,7 +36,7 @@ variable "database_engine_version" {
 }
 
 variable "database_instance_class" {
-  description = "Database instance class (from size preset)"
+  description = "RDS instance class (from size preset)"
   type        = string
 }
 
@@ -92,7 +83,7 @@ variable "cache_engine_version" {
 }
 
 variable "cache_node_type" {
-  description = "Cache node type (from size preset)"
+  description = "ElastiCache node type (from size preset)"
   type        = string
 }
 
@@ -110,20 +101,20 @@ variable "cache_automatic_failover" {
 
 # Storage variables
 variable "storage_buckets" {
-  description = "Storage buckets to create"
+  description = "S3 buckets to create"
   type        = list(string)
   default     = ["artifacts", "static"]
 }
 
 variable "storage_versioning" {
-  description = "Enable storage versioning"
+  description = "Enable S3 versioning"
   type        = bool
   default     = false
 }
 
 # CDN variables
 variable "enable_cdn" {
-  description = "Enable CDN"
+  description = "Enable CloudFront CDN"
   type        = bool
   default     = false
 }
@@ -136,13 +127,13 @@ variable "cdn_origin_domain" {
 
 # DNS variables
 variable "enable_dns" {
-  description = "Enable DNS management"
+  description = "Enable Route53 DNS management"
   type        = bool
   default     = false
 }
 
 variable "dns_zone_name" {
-  description = "DNS zone name"
+  description = "Route53 zone name"
   type        = string
   default     = ""
 }

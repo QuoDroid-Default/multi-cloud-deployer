@@ -7,22 +7,23 @@
 terraform_init() {
     local env=$1
 
-    print_info "Initializing Terraform..."
+    print_info "Initializing Terraform for $CLOUD_PROVIDER..."
 
-    local tf_dir="$DEPLOYER_ROOT/terraform"
+    # Use cloud-specific directory (2026 best practice)
+    local tf_dir="$DEPLOYER_ROOT/terraform/$CLOUD_PROVIDER"
     local state_dir="$WORK_DIR/.deployer/terraform/state"
 
     mkdir -p "$state_dir"
 
-    cd "$tf_dir"
+    # Validate cloud-specific directory exists
+    if [ ! -d "$tf_dir" ]; then
+        print_error "Terraform configuration for '$CLOUD_PROVIDER' not found at $tf_dir"
+        echo "Supported cloud providers: aws, azure"
+        exit 1
+    fi
 
-    # Copy the appropriate provider configuration based on cloud_provider
-    # This is the 2026 best practice: only declare providers you're actually using
+    # Validate Azure credentials if deploying to Azure
     if [ "$CLOUD_PROVIDER" == "azure" ]; then
-        print_info "Configuring Azure provider..."
-        cp providers-azure.tf.template providers.tf
-
-        # Validate Azure credentials
         if [ -z "$ARM_SUBSCRIPTION_ID" ] || [ -z "$ARM_CLIENT_ID" ]; then
             print_error "Azure credentials not configured!"
             echo "Set these environment variables:"
@@ -32,11 +33,9 @@ terraform_init() {
             echo "  ARM_TENANT_ID"
             exit 1
         fi
-    else
-        # AWS deployment
-        print_info "Configuring AWS provider..."
-        cp providers-aws.tf.template providers.tf
     fi
+
+    cd "$tf_dir"
 
     # Initialize with backend configuration
     terraform init \
@@ -45,17 +44,17 @@ terraform_init() {
 
     cd "$WORK_DIR"
 
-    print_success "Terraform initialized"
+    print_success "Terraform initialized for $CLOUD_PROVIDER"
 }
 
 terraform_plan() {
     local env=$1
 
-    print_info "Planning infrastructure changes..."
+    print_info "Planning infrastructure changes for $CLOUD_PROVIDER..."
 
     generate_tfvars "$env"
 
-    local tf_dir="$DEPLOYER_ROOT/terraform"
+    local tf_dir="$DEPLOYER_ROOT/terraform/$CLOUD_PROVIDER"
     local tfvars_file="$WORK_DIR/.deployer/terraform/${env}.tfvars"
 
     cd "$tf_dir"
@@ -72,9 +71,9 @@ terraform_plan() {
 terraform_apply() {
     local env=$1
 
-    print_info "Applying infrastructure changes..."
+    print_info "Applying infrastructure changes for $CLOUD_PROVIDER..."
 
-    local tf_dir="$DEPLOYER_ROOT/terraform"
+    local tf_dir="$DEPLOYER_ROOT/terraform/$CLOUD_PROVIDER"
     local plan_file="$WORK_DIR/.deployer/terraform/${env}.tfplan"
 
     cd "$tf_dir"
@@ -86,15 +85,15 @@ terraform_apply() {
 
     cd "$WORK_DIR"
 
-    print_success "Infrastructure created"
+    print_success "Infrastructure created on $CLOUD_PROVIDER"
 }
 
 terraform_destroy() {
     local env=$1
 
-    print_info "Destroying infrastructure..."
+    print_info "Destroying infrastructure on $CLOUD_PROVIDER..."
 
-    local tf_dir="$DEPLOYER_ROOT/terraform"
+    local tf_dir="$DEPLOYER_ROOT/terraform/$CLOUD_PROVIDER"
     local tfvars_file="$WORK_DIR/.deployer/terraform/${env}.tfvars"
 
     cd "$tf_dir"
@@ -111,9 +110,9 @@ terraform_destroy() {
 terraform_status() {
     local env=$1
 
-    print_info "Terraform state:"
+    print_info "Terraform state for $CLOUD_PROVIDER:"
 
-    local tf_dir="$DEPLOYER_ROOT/terraform"
+    local tf_dir="$DEPLOYER_ROOT/terraform/$CLOUD_PROVIDER"
 
     cd "$tf_dir"
 

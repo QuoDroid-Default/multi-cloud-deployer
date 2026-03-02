@@ -1,2 +1,2 @@
-# Dynamically generated provider file
-providers.tf
+# No longer using dynamic provider files
+# Each cloud (aws/azure) has its own permanent providers.tf

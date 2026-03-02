@@ -1,51 +1,35 @@
-# Multi-Cloud Deployment System - Main Terraform Configuration
+# Azure Infrastructure Configuration
 # Version: 1.0
-
-terraform {
-  required_version = ">= 1.6"
-
-  # Providers are declared in separate files:
-  # - providers-aws.tf.template (copied to providers.tf for AWS deployments)
-  # - providers-azure.tf.template (copied to providers.tf for Azure deployments)
-  # The cloud-deploy script copies the appropriate file during terraform_init()
-
-  backend "local" {
-    # Backend configuration passed via CLI
-    # -backend-config="path=..."
-  }
-}
 
 # Local variables
 locals {
-  is_aws   = var.cloud_provider == "aws"
-  is_azure = var.cloud_provider == "azure"
-
   common_tags = merge(
     var.tags,
     {
-      Environment = var.environment
-      ManagedBy   = "cloud-deploy"
-      Terraform   = "true"
+      Environment    = var.environment
+      ManagedBy      = "cloud-deploy"
+      Terraform      = "true"
+      CloudProvider  = "azure"
     }
   )
 }
 
 # Network module
 module "network" {
-  source = "./modules/network"
+  source = "../modules/network"
 
   environment    = var.environment
-  cloud_provider = var.cloud_provider
+  cloud_provider = "azure"
   region         = var.region
   tags           = local.common_tags
 }
 
 # Compute module
 module "compute" {
-  source = "./modules/compute"
+  source = "../modules/compute"
 
   environment     = var.environment
-  cloud_provider  = var.cloud_provider
+  cloud_provider  = "azure"
   region          = var.region
   instance_type   = var.instance_type
   instance_count  = var.instance_count
@@ -57,10 +41,10 @@ module "compute" {
 
 # Database module
 module "database" {
-  source = "./modules/database"
+  source = "../modules/database"
 
   environment           = var.environment
-  cloud_provider        = var.cloud_provider
+  cloud_provider        = "azure"
   region                = var.region
   instance_class        = var.database_instance_class
   allocated_storage     = var.database_allocated_storage
@@ -78,10 +62,10 @@ module "database" {
 
 # Cache module
 module "cache" {
-  source = "./modules/cache"
+  source = "../modules/cache"
 
   environment          = var.environment
-  cloud_provider       = var.cloud_provider
+  cloud_provider       = "azure"
   region               = var.region
   node_type            = var.cache_node_type
   num_cache_nodes      = var.cache_num_nodes
@@ -96,10 +80,10 @@ module "cache" {
 
 # Storage module
 module "storage" {
-  source = "./modules/storage"
+  source = "../modules/storage"
 
   environment    = var.environment
-  cloud_provider = var.cloud_provider
+  cloud_provider = "azure"
   region         = var.region
   buckets        = var.storage_buckets
   versioning     = var.storage_versioning
@@ -110,10 +94,10 @@ module "storage" {
 module "cdn" {
   count = var.enable_cdn ? 1 : 0
 
-  source = "./modules/cdn"
+  source = "../modules/cdn"
 
   environment    = var.environment
-  cloud_provider = var.cloud_provider
+  cloud_provider = "azure"
   origin_domain  = var.cdn_origin_domain
   tags           = local.common_tags
 }
@@ -122,10 +106,10 @@ module "cdn" {
 module "dns" {
   count = var.enable_dns ? 1 : 0
 
-  source = "./modules/dns"
+  source = "../modules/dns"
 
   environment    = var.environment
-  cloud_provider = var.cloud_provider
+  cloud_provider = "azure"
   zone_name      = var.dns_zone_name
   records        = var.dns_records
   tags           = local.common_tags

@@ -1,27 +1,27 @@
-# Multi-Cloud Deployment System - Outputs
+# AWS Infrastructure Outputs
 
 output "vpc_id" {
-  description = "VPC/VNet ID"
+  description = "VPC ID"
   value       = module.network.vpc_id
 }
 
 output "instance_ids" {
-  description = "Compute instance IDs"
+  description = "EC2 instance IDs"
   value       = module.compute.instance_ids
 }
 
 output "instance_ips" {
-  description = "Compute instance private IPs"
+  description = "EC2 instance private IPs"
   value       = module.compute.instance_private_ips
 }
 
 output "instance_public_ips" {
-  description = "Compute instance public IPs"
+  description = "EC2 instance public IPs"
   value       = module.compute.instance_public_ips
 }
 
 output "database_endpoint" {
-  description = "Database endpoint"
+  description = "RDS endpoint"
   value       = module.database.endpoint
   sensitive   = true
 }
@@ -37,7 +37,7 @@ output "database_name" {
 }
 
 output "cache_endpoint" {
-  description = "Cache endpoint"
+  description = "ElastiCache endpoint"
   value       = module.cache.endpoint
 }
 
@@ -47,22 +47,22 @@ output "cache_port" {
 }
 
 output "storage_bucket_names" {
-  description = "Storage bucket names"
+  description = "S3 bucket names"
   value       = module.storage.bucket_names
 }
 
 output "storage_bucket_urls" {
-  description = "Storage bucket URLs"
+  description = "S3 bucket URLs"
   value       = module.storage.bucket_urls
 }
 
 output "cdn_domain" {
-  description = "CDN domain name"
+  description = "CloudFront domain name"
   value       = var.enable_cdn ? module.cdn[0].domain_name : ""
 }
 
 output "dns_nameservers" {
-  description = "DNS nameservers"
+  description = "Route53 nameservers"
   value       = var.enable_dns ? module.dns[0].nameservers : []
 }
 
@@ -70,7 +70,7 @@ output "deployment_summary" {
   description = "Deployment summary"
   value = {
     environment    = var.environment
-    cloud_provider = var.cloud_provider
+    cloud_provider = "aws"
     region         = var.region
     instance_count = var.instance_count
     instance_type  = var.instance_type
