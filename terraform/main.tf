@@ -26,19 +26,13 @@ provider "aws" {
   region = var.region
 }
 
-# Azure provider - required for syntax validation even when not deploying to Azure
-# Uses environment variables for configuration to avoid hardcoded credentials
 provider "azurerm" {
   features {}
-
-  # Disable all authentication methods when not using Azure
   skip_provider_registration = true
-  use_cli                   = false
-  use_msi                   = false
-  use_oidc                  = false
 
-  # Dummy credentials required for provider initialization
-  # These will be set via environment variables when cloud_provider = "aws"
+  # Credentials set via ARM_* environment variables
+  # For AWS-only deployments, dummy values are auto-set by cloud-deploy
+  # For Azure deployments, real credentials must be provided
 }
 
 # Local variables
