@@ -10,15 +10,28 @@ cleanup_orphaned_resources() {
     print_info "Cleaning up orphaned resources from previous failed deployments..."
 
     if [ "$CLOUD_PROVIDER" == "aws" ]; then
-        # Delete orphaned DB subnet group
-        aws rds delete-db-subnet-group \
+        # Check and delete orphaned DB subnet group
+        if aws rds describe-db-subnet-groups \
             --db-subnet-group-name "${env}-db-subnet-group" \
-            --region "$REGION" 2>/dev/null || true
+            --region "$REGION" &>/dev/null; then
+            print_info "Deleting orphaned DB subnet group: ${env}-db-subnet-group"
+            aws rds delete-db-subnet-group \
+                --db-subnet-group-name "${env}-db-subnet-group" \
+                --region "$REGION" || print_warning "Failed to delete DB subnet group (may be in use)"
+        fi
 
-        # Delete orphaned ElastiCache subnet group
-        aws elasticache delete-cache-subnet-group \
+        # Check and delete orphaned ElastiCache subnet group
+        if aws elasticache describe-cache-subnet-groups \
             --cache-subnet-group-name "${env}-cache-subnet-group" \
-            --region "$REGION" 2>/dev/null || true
+            --region "$REGION" &>/dev/null; then
+            print_info "Deleting orphaned ElastiCache subnet group: ${env}-cache-subnet-group"
+            aws elasticache delete-cache-subnet-group \
+                --cache-subnet-group-name "${env}-cache-subnet-group" \
+                --region "$REGION" || print_warning "Failed to delete ElastiCache subnet group (may be in use)"
+        fi
+
+        # Wait a moment for deletions to propagate
+        sleep 2
 
         print_success "Cleanup complete"
     fi
