@@ -1,5 +1,5 @@
 output "endpoint" {
-  value = var.cloud_provider == "aws" ? (length(aws_db_instance.main) > 0 ? aws_db_instance.main[0].endpoint : "") : (length(azurerm_postgresql_server.main) > 0 ? azurerm_postgresql_server.main[0].fqdn : "")
+  value = var.cloud_provider == "aws" ? (length(aws_db_instance.main) > 0 ? aws_db_instance.main[0].endpoint : "") : (length(azurerm_postgresql_flexible_server.main) > 0 ? azurerm_postgresql_flexible_server.main[0].fqdn : "")
 }
 
 output "port" {
