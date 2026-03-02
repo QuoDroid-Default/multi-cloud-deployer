@@ -136,7 +136,7 @@ instance_count = $INSTANCE_COUNT
 
 # Database
 database_engine = "postgres"
-database_engine_version = "15.4"
+database_engine_version = "15"
 database_instance_class = "$DB_INSTANCE_CLASS"
 database_allocated_storage = $DB_STORAGE
 database_name = "app_db"

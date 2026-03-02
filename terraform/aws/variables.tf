@@ -42,7 +42,7 @@ variable "database_engine" {
 variable "database_engine_version" {
   description = "Database engine version"
   type        = string
-  default     = "15.4"
+  default     = "15"
 }
 
 variable "database_instance_class" {

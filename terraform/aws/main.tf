@@ -291,11 +291,16 @@ resource "aws_elasticache_cluster" "main" {
 # STORAGE
 ################################################################################
 
+# Random suffix for unique bucket names
+resource "random_id" "bucket_suffix" {
+  byte_length = 4
+}
+
 # S3 Buckets
 resource "aws_s3_bucket" "main" {
   for_each = toset(var.storage_buckets)
 
-  bucket = "${var.environment}-${each.key}-${data.aws_caller_identity.current.account_id}"
+  bucket = "${var.environment}-${each.key}-${random_id.bucket_suffix.hex}"
 
   tags = merge(local.common_tags, {
     Name = "${var.environment}-${each.key}"
