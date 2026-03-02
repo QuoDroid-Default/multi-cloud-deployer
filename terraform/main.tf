@@ -22,14 +22,18 @@ terraform {
 }
 
 # Provider configuration
+# Note: Both providers are configured but only resources for the selected cloud_provider are created
 provider "aws" {
-  region = var.cloud_provider == "aws" ? var.region : null
-  skip_region_validation = var.cloud_provider != "aws"
+  region = var.region
+  skip_region_validation = true
+  skip_credentials_validation = true
+  skip_metadata_api_check = true
+  skip_requesting_account_id = true
 }
 
 provider "azurerm" {
   features {}
-  skip_provider_registration = var.cloud_provider != "azure"
+  skip_provider_registration = true
 }
 
 # Local variables
