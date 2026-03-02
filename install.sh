@@ -4,10 +4,10 @@
 # Multi-Cloud Deployer - Installation Script
 #
 # Usage:
-#   curl -sSL https://raw.githubusercontent.com/your-org/multi-cloud-deployer/main/install.sh | bash
+#   curl -sSL https://raw.githubusercontent.com/QuoDroid-Default/multi-cloud-deployer/main/install.sh | bash
 #
 # Or:
-#   wget -qO- https://raw.githubusercontent.com/your-org/multi-cloud-deployer/main/install.sh | bash
+#   wget -qO- https://raw.githubusercontent.com/QuoDroid-Default/multi-cloud-deployer/main/install.sh | bash
 ################################################################################
 
 set -e
@@ -20,7 +20,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-REPO="https://github.com/your-org/multi-cloud-deployer.git"
+REPO="https://github.com/QuoDroid-Default/multi-cloud-deployer.git"
 INSTALL_DIR="${HOME}/.cloud-deploy"
 BIN_DIR="${HOME}/.local/bin"
 
@@ -133,7 +133,7 @@ main() {
     echo "  3. Configure your infrastructure repository"
     echo ""
     echo "Documentation:"
-    echo "  https://github.com/your-org/multi-cloud-deployer"
+    echo "  https://github.com/QuoDroid-Default/multi-cloud-deployer"
 }
 
 main
