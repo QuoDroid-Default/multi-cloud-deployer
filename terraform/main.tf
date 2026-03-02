@@ -9,10 +9,6 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0"
-    }
   }
 
   backend "local" {
@@ -22,24 +18,11 @@ terraform {
 }
 
 # Provider configuration
-# Note: Both providers are configured but only resources for the selected cloud_provider are created
 provider "aws" {
   region = var.region
-  skip_region_validation = true
-  skip_credentials_validation = true
-  skip_metadata_api_check = true
-  skip_requesting_account_id = true
 }
 
-provider "azurerm" {
-  features {}
-  skip_provider_registration = true
-
-  # Skip authentication when not using Azure
-  use_cli = false
-  use_msi = false
-  use_oidc = false
-}
+# Azure provider will be added via provider_azure.tf when cloud_provider = "azure"
 
 # Local variables
 locals {

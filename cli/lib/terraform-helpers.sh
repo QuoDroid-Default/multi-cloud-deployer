@@ -16,6 +16,15 @@ terraform_init() {
 
     cd "$tf_dir"
 
+    # Conditionally include Azure provider based on cloud_provider
+    if [ "$CLOUD_PROVIDER" == "azure" ]; then
+        print_info "Including Azure provider configuration..."
+        cp provider_azure.tf.template provider_azure.tf
+    else
+        # Remove Azure provider if it exists from previous runs
+        rm -f provider_azure.tf
+    fi
+
     # Initialize with backend configuration
     terraform init \
         -backend-config="path=$state_dir/${env}.tfstate" \
