@@ -16,13 +16,12 @@ terraform_init() {
 
     cd "$tf_dir"
 
-    # Conditionally include Azure provider based on cloud_provider
-    if [ "$CLOUD_PROVIDER" == "azure" ]; then
-        print_info "Including Azure provider configuration..."
-        cp provider_azure.tf.template provider_azure.tf
-    else
-        # Remove Azure provider if it exists from previous runs
-        rm -f provider_azure.tf
+    # Set dummy Azure credentials if deploying to AWS
+    if [ "$CLOUD_PROVIDER" == "aws" ]; then
+        export ARM_SUBSCRIPTION_ID="${ARM_SUBSCRIPTION_ID:-00000000-0000-0000-0000-000000000000}"
+        export ARM_CLIENT_ID="${ARM_CLIENT_ID:-00000000-0000-0000-0000-000000000000}"
+        export ARM_CLIENT_SECRET="${ARM_CLIENT_SECRET:-dummy-secret}"
+        export ARM_TENANT_ID="${ARM_TENANT_ID:-00000000-0000-0000-0000-000000000000}"
     fi
 
     # Initialize with backend configuration

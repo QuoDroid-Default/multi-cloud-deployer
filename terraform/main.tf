@@ -9,6 +9,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 3.0"
+    }
   }
 
   backend "local" {
@@ -22,7 +26,16 @@ provider "aws" {
   region = var.region
 }
 
-# Azure provider will be added via provider_azure.tf when cloud_provider = "azure"
+# Azure provider - required for syntax validation even when not deploying to Azure
+# Uses environment variables for configuration to avoid hardcoded credentials
+provider "azurerm" {
+  features {}
+
+  # These will be set via environment variables:
+  # ARM_SUBSCRIPTION_ID, ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_TENANT_ID
+  # For AWS deployments, dummy values are acceptable since no Azure resources are created
+  skip_provider_registration = true
+}
 
 # Local variables
 locals {
