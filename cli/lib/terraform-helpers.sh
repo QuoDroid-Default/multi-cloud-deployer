@@ -10,63 +10,86 @@ cleanup_orphaned_resources() {
     print_info "Cleaning up orphaned resources from previous failed deployments..."
 
     if [ "$CLOUD_PROVIDER" == "aws" ]; then
-        # Delete orphaned ElastiCache cluster first (if exists)
-        local cache_clusters=$(aws elasticache describe-cache-clusters \
-            --query "CacheClusters[?starts_with(CacheClusterId, '${env}-cache')].CacheClusterId" \
-            --region "$REGION" \
-            --output text 2>/dev/null)
+        # Try to delete subnet groups first (they might already be orphaned)
+        local db_group_deleted=false
+        local cache_group_deleted=false
 
-        if [ -n "$cache_clusters" ]; then
-            for cluster_id in $cache_clusters; do
-                print_info "Deleting orphaned ElastiCache cluster: $cluster_id"
-                aws elasticache delete-cache-cluster \
-                    --cache-cluster-id "$cluster_id" \
-                    --region "$REGION" 2>/dev/null || true
-            done
-            # Wait for cluster deletion to complete
-            print_info "Waiting for ElastiCache cluster deletion..."
-            sleep 10
-        fi
-
-        # Delete orphaned RDS instance first (if exists)
-        local rds_instances=$(aws rds describe-db-instances \
-            --query "DBInstances[?starts_with(DBInstanceIdentifier, '${env}-db')].DBInstanceIdentifier" \
-            --region "$REGION" \
-            --output text 2>/dev/null)
-
-        if [ -n "$rds_instances" ]; then
-            for instance_id in $rds_instances; do
-                print_info "Deleting orphaned RDS instance: $instance_id"
-                aws rds delete-db-instance \
-                    --db-instance-identifier "$instance_id" \
-                    --skip-final-snapshot \
-                    --region "$REGION" 2>/dev/null || true
-            done
-            # Wait for instance deletion to start
-            print_info "Waiting for RDS instance deletion..."
-            sleep 10
-        fi
-
-        # Now delete subnet groups (should work now that clusters are gone)
+        # Try DB subnet group deletion
         if aws rds describe-db-subnet-groups \
             --db-subnet-group-name "${env}-db-subnet-group" \
             --region "$REGION" &>/dev/null; then
-            print_info "Deleting orphaned DB subnet group: ${env}-db-subnet-group"
-            aws rds delete-db-subnet-group \
+            print_info "Attempting to delete DB subnet group: ${env}-db-subnet-group"
+            if aws rds delete-db-subnet-group \
                 --db-subnet-group-name "${env}-db-subnet-group" \
-                --region "$REGION" 2>/dev/null || print_warning "Failed to delete DB subnet group (may still be in use)"
+                --region "$REGION" 2>/dev/null; then
+                print_success "Deleted DB subnet group"
+                db_group_deleted=true
+            else
+                print_warning "DB subnet group in use, checking for dependent resources..."
+
+                # Find and delete any RDS instances using it
+                local rds_instances=$(aws rds describe-db-instances \
+                    --query "DBInstances[?DBSubnetGroup.DBSubnetGroupName=='${env}-db-subnet-group'].DBInstanceIdentifier" \
+                    --region "$REGION" \
+                    --output text 2>/dev/null)
+
+                if [ -n "$rds_instances" ]; then
+                    for instance_id in $rds_instances; do
+                        print_info "Deleting RDS instance using subnet group: $instance_id"
+                        aws rds delete-db-instance \
+                            --db-instance-identifier "$instance_id" \
+                            --skip-final-snapshot \
+                            --region "$REGION" 2>/dev/null || true
+                    done
+                    print_info "Waiting 15 seconds for RDS deletion to start..."
+                    sleep 15
+
+                    # Try deleting subnet group again
+                    aws rds delete-db-subnet-group \
+                        --db-subnet-group-name "${env}-db-subnet-group" \
+                        --region "$REGION" 2>/dev/null && db_group_deleted=true || true
+                fi
+            fi
         fi
 
+        # Try ElastiCache subnet group deletion
         if aws elasticache describe-cache-subnet-groups \
             --cache-subnet-group-name "${env}-cache-subnet-group" \
             --region "$REGION" &>/dev/null; then
-            print_info "Deleting orphaned ElastiCache subnet group: ${env}-cache-subnet-group"
-            aws elasticache delete-cache-subnet-group \
+            print_info "Attempting to delete ElastiCache subnet group: ${env}-cache-subnet-group"
+            if aws elasticache delete-cache-subnet-group \
                 --cache-subnet-group-name "${env}-cache-subnet-group" \
-                --region "$REGION" 2>/dev/null || print_warning "Failed to delete ElastiCache subnet group (may still be in use)"
+                --region "$REGION" 2>/dev/null; then
+                print_success "Deleted ElastiCache subnet group"
+                cache_group_deleted=true
+            else
+                print_warning "ElastiCache subnet group in use, checking for dependent resources..."
+
+                # Find and delete any clusters using it
+                local cache_clusters=$(aws elasticache describe-cache-clusters \
+                    --query "CacheClusters[?CacheSubnetGroupName=='${env}-cache-subnet-group'].CacheClusterId" \
+                    --region "$REGION" \
+                    --output text 2>/dev/null)
+
+                if [ -n "$cache_clusters" ]; then
+                    for cluster_id in $cache_clusters; do
+                        print_info "Deleting ElastiCache cluster using subnet group: $cluster_id"
+                        aws elasticache delete-cache-cluster \
+                            --cache-cluster-id "$cluster_id" \
+                            --region "$REGION" 2>/dev/null || true
+                    done
+                    print_info "Waiting 15 seconds for ElastiCache deletion to start..."
+                    sleep 15
+
+                    # Try deleting subnet group again
+                    aws elasticache delete-cache-subnet-group \
+                        --cache-subnet-group-name "${env}-cache-subnet-group" \
+                        --region "$REGION" 2>/dev/null && cache_group_deleted=true || true
+                fi
+            fi
         fi
 
-        print_success "Cleanup complete"
+        [ "$db_group_deleted" = true ] || [ "$cache_group_deleted" = true ] && print_success "Cleanup complete" || print_info "No orphaned resources found"
     fi
 }
 
