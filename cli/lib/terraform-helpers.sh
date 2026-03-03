@@ -203,7 +203,18 @@ terraform_destroy() {
 
     # AWS-specific pre-destroy cleanup
     if [ "$CLOUD_PROVIDER" == "aws" ]; then
-        print_info "Cleaning up subnet groups before destroy..."
+        print_info "Cleaning up orphaned resources before destroy..."
+
+        # Delete SSH key pairs (may be orphaned from failed deployments)
+        print_info "Deleting SSH key pairs..."
+        aws ec2 describe-key-pairs --region "$REGION" \
+            --query "KeyPairs[?starts_with(KeyName, '${env}-')].KeyName" \
+            --output text 2>/dev/null | while read key_name; do
+            if [ -n "$key_name" ]; then
+                print_info "Deleting key pair: $key_name"
+                aws ec2 delete-key-pair --key-name "$key_name" --region "$REGION" 2>/dev/null || true
+            fi
+        done
 
         # Try to delete DB subnet groups
         aws rds delete-db-subnet-group \
