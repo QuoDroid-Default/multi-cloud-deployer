@@ -173,7 +173,9 @@ terraform_apply() {
     local outputs_file="$WORK_DIR/.deployer/terraform/${env}-outputs.json"
     print_info "Saving Terraform outputs..."
 
-    if terraform output -json > "$outputs_file" 2>&1; then
+    # CRITICAL: Don't redirect stderr to stdout (2>&1) - it corrupts the JSON
+    # Let stderr go to console, only capture stdout as JSON
+    if terraform output -json > "$outputs_file"; then
         print_success "Terraform outputs saved"
     else
         print_error "Failed to save Terraform outputs"
