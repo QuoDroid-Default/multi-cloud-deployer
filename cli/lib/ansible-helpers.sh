@@ -18,7 +18,7 @@ ansible_deploy() {
     # Run Ansible playbook
     cd "$DEPLOYER_ROOT/ansible"
 
-    ansible-playbook \
+    ANSIBLE_ROLES_PATH="$DEPLOYER_ROOT/ansible/roles" ansible-playbook \
         -i "$inventory_file" \
         "$playbook" \
         -e "env_name=$env" \
@@ -59,8 +59,8 @@ generate_ansible_inventory() {
 
     mkdir -p "$(dirname "$inventory_file")"
 
-    # Get EC2 instance IPs from Terraform outputs
-    local instance_ips=$(terraform_output "$env" "instance_ips" | jq -r '.[]' | tr '\n' ' ')
+    # Get EC2 instance public IPs from Terraform outputs
+    local instance_ips=$(terraform_output "$env" "instance_public_ips" 2>/dev/null | jq -r 'if type == "array" then .[] else . end' 2>/dev/null | tr '\n' ' ' || echo "")
 
     cat > "$inventory_file" <<EOF
 # Ansible inventory for $env

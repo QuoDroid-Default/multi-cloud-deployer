@@ -16,8 +16,8 @@ output "instance_ips" {
 }
 
 output "instance_public_ips" {
-  description = "EC2 instance public IPs (empty for private subnets)"
-  value       = []
+  description = "EC2 instance public IPs"
+  value       = aws_instance.app[*].public_ip
 }
 
 output "database_endpoint" {

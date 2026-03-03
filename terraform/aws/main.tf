@@ -199,10 +199,11 @@ data "aws_ami" "ubuntu" {
 resource "aws_instance" "app" {
   count = var.instance_count
 
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.instance_type
-  subnet_id              = aws_subnet.private[count.index % 2].id
-  vpc_security_group_ids = [aws_security_group.app.id]
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = var.instance_type
+  subnet_id                   = aws_subnet.public[count.index % 2].id
+  vpc_security_group_ids      = [aws_security_group.app.id]
+  associate_public_ip_address = true
 
   tags = merge(local.common_tags, {
     Name = "${var.environment}-app-${count.index + 1}"
