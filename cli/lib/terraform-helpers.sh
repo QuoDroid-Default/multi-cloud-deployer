@@ -185,11 +185,39 @@ terraform_destroy() {
     local tf_dir="$DEPLOYER_ROOT/terraform/$CLOUD_PROVIDER"
     local tfvars_file="$WORK_DIR/.deployer/terraform/${env}.tfvars"
 
+    # AWS-specific pre-destroy cleanup
+    if [ "$CLOUD_PROVIDER" == "aws" ]; then
+        print_info "Cleaning up subnet groups before destroy..."
+
+        # Try to delete DB subnet groups
+        aws rds delete-db-subnet-group \
+            --db-subnet-group-name "${env}-db-subnet-group" \
+            --region "$REGION" 2>/dev/null && print_success "Deleted DB subnet group" || true
+
+        # Try to delete ElastiCache subnet groups
+        aws elasticache delete-cache-subnet-group \
+            --cache-subnet-group-name "${env}-cache-subnet-group" \
+            --region "$REGION" 2>/dev/null && print_success "Deleted ElastiCache subnet group" || true
+
+        sleep 5
+    fi
+
     cd "$tf_dir"
 
-    terraform destroy \
+    # 2026 Best Practice: Retry destroy with target flag if initial attempt fails
+    print_info "Running Terraform destroy..."
+    if ! terraform destroy \
         -var-file="$tfvars_file" \
-        -auto-approve
+        -auto-approve 2>&1; then
+
+        print_warning "Initial destroy failed, retrying with refresh..."
+        terraform refresh -var-file="$tfvars_file"
+
+        # Try again
+        terraform destroy \
+            -var-file="$tfvars_file" \
+            -auto-approve
+    fi
 
     cd "$WORK_DIR"
 

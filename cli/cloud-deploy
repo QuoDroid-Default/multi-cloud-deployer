@@ -314,10 +314,15 @@ cmd_down() {
     print_header
     print_warning "Destroying environment: $env"
 
-    read -p "Are you sure you want to destroy $env? (yes/no): " confirm
-    if [ "$confirm" != "yes" ]; then
-        print_info "Cancelled"
-        exit 0
+    # Skip confirmation if AUTO_APPROVE is set (for CI/CD)
+    if [ "$AUTO_APPROVE" != "true" ]; then
+        read -p "Are you sure you want to destroy $env? (yes/no): " confirm
+        if [ "$confirm" != "yes" ]; then
+            print_info "Cancelled"
+            exit 0
+        fi
+    else
+        print_info "Auto-approved via AUTO_APPROVE=true"
     fi
 
     validate_dependencies
