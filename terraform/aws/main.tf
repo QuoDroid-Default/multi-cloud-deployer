@@ -5,10 +5,12 @@ locals {
   common_tags = merge(
     var.tags,
     {
-      Environment    = var.environment
-      ManagedBy      = "cloud-deploy"
-      Terraform      = "true"
-      CloudProvider  = "aws"
+      Environment      = var.environment
+      ManagedBy        = "cloud-deploy"
+      DeploymentTool   = "multi-cloud-deployer"
+      AutoManaged      = "true"
+      Terraform        = "true"
+      CloudProvider    = "aws"
     }
   )
 }

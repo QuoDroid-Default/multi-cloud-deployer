@@ -203,11 +203,16 @@ terraform_destroy() {
 
     # AWS-specific pre-destroy cleanup
     if [ "$CLOUD_PROVIDER" == "aws" ]; then
-        print_info "Cleaning up orphaned resources before destroy..."
+        print_info "Cleaning up orphaned resources before destroy (tag-filtered for safety)..."
 
         # Delete SSH key pairs (may be orphaned from failed deployments)
-        print_info "Deleting SSH key pairs..."
+        # SAFE: Only deletes resources with all three management tags
+        print_info "Deleting SSH key pairs with cloud-deploy tags..."
         aws ec2 describe-key-pairs --region "$REGION" \
+            --filters \
+                "Name=tag:ManagedBy,Values=cloud-deploy" \
+                "Name=tag:DeploymentTool,Values=multi-cloud-deployer" \
+                "Name=tag:AutoManaged,Values=true" \
             --query "KeyPairs[?starts_with(KeyName, '${env}-')].KeyName" \
             --output text 2>/dev/null | while read key_name; do
             if [ -n "$key_name" ]; then
