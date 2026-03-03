@@ -26,6 +26,29 @@ variable "instance_type" {
   type        = string
 }
 
+variable "ssh_allowed_cidrs" {
+  description = "CIDR blocks allowed to SSH (GitHub Actions IPs for CI/CD)"
+  type        = list(string)
+  default = [
+    # GitHub Actions IP ranges (update periodically from https://api.github.com/meta)
+    "4.175.114.51/32",
+    "20.102.39.120/32",
+    "20.119.28.4/32",
+    "20.163.121.220/32",
+    "20.172.254.84/32",
+    "20.200.245.245/32",
+    "20.201.28.148/32",
+    "20.205.243.164/32",
+    "20.207.73.85/32",
+    "20.233.83.145/32",
+    "20.245.86.140/32",
+    "20.253.2.193/32",
+    "40.84.180.132/32",
+    "52.225.184.22/32",
+    "52.228.82.84/32",
+  ]
+}
+
 variable "instance_count" {
   description = "Number of instances"
   type        = number
