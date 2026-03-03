@@ -204,14 +204,20 @@ terraform_destroy() {
 
     cd "$tf_dir"
 
-    # 2026 Best Practice: Retry destroy with target flag if initial attempt fails
+    # 2026 Best Practice: Generate tfvars if missing (for incomplete deployments)
+    if [ ! -f "$tfvars_file" ]; then
+        print_warning "tfvars file not found, generating for destroy..."
+        generate_tfvars "$env"
+    fi
+
+    # 2026 Best Practice: Destroy using state, retry if needed
     print_info "Running Terraform destroy..."
     if ! terraform destroy \
         -var-file="$tfvars_file" \
         -auto-approve 2>&1; then
 
         print_warning "Initial destroy failed, retrying with refresh..."
-        terraform refresh -var-file="$tfvars_file"
+        terraform refresh -var-file="$tfvars_file" || true
 
         # Try again
         terraform destroy \
