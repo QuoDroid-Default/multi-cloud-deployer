@@ -12,6 +12,7 @@
       - libpq-dev
       - nginx
       - supervisor
+      - rsync
     state: present
     update_cache: yes
 
@@ -38,6 +39,14 @@
   delegate_to: localhost
   become: no
 
+- name: Create Django .env file
+  template:
+    src: django.env.j2
+    dest: "{{ backend_dir }}/.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0600'
+
 - name: Create Python virtual environment
   command: python3 -m venv {{ backend_dir }}/venv
   args:
@@ -56,13 +65,17 @@
     app_path: "{{ backend_dir }}"
     virtualenv: "{{ backend_dir }}/venv"
   become_user: "{{ app_user }}"
+  environment:
+    DJANGO_SETTINGS_MODULE: "{{ django_settings_module }}"
 
 - name: Collect static files
   django_manage:
-    command: collectstatic
+    command: collectstatic --noinput
     app_path: "{{ backend_dir }}"
     virtualenv: "{{ backend_dir }}/venv"
   become_user: "{{ app_user }}"
+  environment:
+    DJANGO_SETTINGS_MODULE: "{{ django_settings_module }}"
 
 - name: Create systemd service files
   template:

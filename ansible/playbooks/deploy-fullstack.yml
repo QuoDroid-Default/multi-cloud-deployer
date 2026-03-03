@@ -11,17 +11,16 @@
     app_user: "app"
     app_dir: "/opt/app"
     backend_dir: "{{ app_dir }}/backend"
-    frontend_dir: "{{ app_dir}/frontend"
+    frontend_dir: "{{ app_dir }}/frontend"
 
   roles:
     - role: python-django
-      when: backend_configured
+      when: clone_dir is defined
 
     - role: react-vite
-      when: frontend_configured
+      when: clone_dir is defined
 
     - role: nginx
-      when: true
 
   tasks:
     - name: Display deployment summary

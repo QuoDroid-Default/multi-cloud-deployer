@@ -11,9 +11,29 @@ ansible_deploy() {
 
     local playbook="$DEPLOYER_ROOT/ansible/playbooks/deploy-fullstack.yml"
     local inventory_file="$WORK_DIR/.deployer/ansible/${env}-inventory.ini"
+    local outputs_file="$WORK_DIR/.deployer/terraform/${env}-outputs.json"
 
     # Generate inventory from Terraform outputs
     generate_ansible_inventory "$env"
+
+    # Extract configuration from Terraform outputs
+    print_info "Extracting configuration from Terraform outputs..."
+
+    local db_endpoint=$(cat "$outputs_file" | jq -r '.database_endpoint.value // ""' | cut -d: -f1)
+    local db_port=$(cat "$outputs_file" | jq -r '.database_port.value // "5432"')
+    local db_name=$(cat "$outputs_file" | jq -r '.database_name.value // ""')
+    local db_password=$(cat "$outputs_file" | jq -r '.database_password.value // ""')
+
+    local cache_endpoint=$(cat "$outputs_file" | jq -r '.cache_endpoint.value // ""')
+    local cache_port=$(cat "$outputs_file" | jq -r '.cache_port.value // "6379"')
+
+    # Generate random secret key for Django (using Python for reliability)
+    local secret_key=$(python3 -c "import secrets; print(secrets.token_urlsafe(50))")
+
+    # Get first instance IP for ALLOWED_HOSTS
+    local first_ip=$(cat "$inventory_file" | grep -E '^[0-9]' | head -1 | awk '{print $1}')
+
+    print_success "Configuration extracted successfully"
 
     # Run Ansible playbook
     cd "$DEPLOYER_ROOT/ansible"
@@ -23,7 +43,16 @@ ansible_deploy() {
         "$playbook" \
         -e "env_name=$env" \
         -e "clone_dir=$CLONE_DIR" \
-        -e "config_dir=$DEPLOYER_DIR"
+        -e "config_dir=$DEPLOYER_DIR" \
+        -e "database_host=$db_endpoint" \
+        -e "database_port=$db_port" \
+        -e "database_name=$db_name" \
+        -e "database_user=dbadmin" \
+        -e "database_password=$db_password" \
+        -e "cache_host=$cache_endpoint" \
+        -e "cache_port=$cache_port" \
+        -e "django_secret_key=$secret_key" \
+        -e "django_allowed_hosts=$first_ip,localhost,127.0.0.1"
 
     cd "$WORK_DIR"
 
