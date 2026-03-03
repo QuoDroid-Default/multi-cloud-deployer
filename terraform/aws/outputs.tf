@@ -20,6 +20,12 @@ output "instance_public_ips" {
   value       = aws_instance.app[*].public_ip
 }
 
+output "ssh_private_key" {
+  description = "SSH private key for instance access"
+  value       = tls_private_key.ssh.private_key_pem
+  sensitive   = true
+}
+
 output "database_endpoint" {
   description = "RDS endpoint"
   value       = aws_db_instance.main.endpoint

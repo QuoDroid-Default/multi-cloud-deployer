@@ -196,6 +196,19 @@ data "aws_ami" "ubuntu" {
   }
 }
 
+# SSH Key Pair
+resource "tls_private_key" "ssh" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "deployer" {
+  key_name   = "${var.environment}-deployer-key"
+  public_key = tls_private_key.ssh.public_key_openssh
+
+  tags = local.common_tags
+}
+
 # EC2 Instances
 resource "aws_instance" "app" {
   count = var.instance_count
@@ -205,6 +218,7 @@ resource "aws_instance" "app" {
   subnet_id                   = aws_subnet.public[count.index % 2].id
   vpc_security_group_ids      = [aws_security_group.app.id]
   associate_public_ip_address = true
+  key_name                    = aws_key_pair.deployer.key_name
 
   tags = merge(local.common_tags, {
     Name = "${var.environment}-app-${count.index + 1}"
