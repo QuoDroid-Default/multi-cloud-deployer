@@ -169,8 +169,24 @@ terraform_apply() {
 
     terraform apply "$plan_file"
 
-    # Save outputs
-    terraform output -json > "$WORK_DIR/.deployer/terraform/${env}-outputs.json"
+    # Save outputs with error handling
+    local outputs_file="$WORK_DIR/.deployer/terraform/${env}-outputs.json"
+    print_info "Saving Terraform outputs..."
+
+    if terraform output -json > "$outputs_file" 2>&1; then
+        print_success "Terraform outputs saved"
+    else
+        print_error "Failed to save Terraform outputs"
+        cat "$outputs_file"
+        exit 1
+    fi
+
+    # Validate JSON
+    if ! jq empty "$outputs_file" 2>/dev/null; then
+        print_error "Invalid JSON in outputs file"
+        cat "$outputs_file"
+        exit 1
+    fi
 
     cd "$WORK_DIR"
 

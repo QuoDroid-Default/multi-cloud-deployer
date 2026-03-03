@@ -19,13 +19,32 @@ ansible_deploy() {
     # Extract configuration from Terraform outputs
     print_info "Extracting configuration from Terraform outputs..."
 
-    local db_endpoint=$(cat "$outputs_file" | jq -r '.database_endpoint.value // ""' | cut -d: -f1)
-    local db_port=$(cat "$outputs_file" | jq -r '.database_port.value // "5432"')
-    local db_name=$(cat "$outputs_file" | jq -r '.database_name.value // ""')
-    local db_password=$(cat "$outputs_file" | jq -r '.database_password.value // ""')
+    # Validate outputs file is valid JSON
+    if ! jq empty "$outputs_file" 2>/dev/null; then
+        print_error "Invalid JSON in Terraform outputs file"
+        exit 1
+    fi
 
-    local cache_endpoint=$(cat "$outputs_file" | jq -r '.cache_endpoint.value // ""')
-    local cache_port=$(cat "$outputs_file" | jq -r '.cache_port.value // "6379"')
+    local db_endpoint=$(jq -r '.database_endpoint.value // ""' "$outputs_file" 2>/dev/null | cut -d: -f1)
+    local db_port=$(jq -r '.database_port.value // "5432"' "$outputs_file" 2>/dev/null)
+    local db_name=$(jq -r '.database_name.value // ""' "$outputs_file" 2>/dev/null)
+    local db_password=$(jq -r '.database_password.value // ""' "$outputs_file" 2>/dev/null)
+
+    local cache_endpoint=$(jq -r '.cache_endpoint.value // ""' "$outputs_file" 2>/dev/null)
+    local cache_port=$(jq -r '.cache_port.value // "6379"' "$outputs_file" 2>/dev/null)
+
+    # Validate required values
+    if [ -z "$db_endpoint" ] || [ -z "$db_name" ] || [ -z "$db_password" ]; then
+        print_error "Missing required database configuration"
+        print_info "DB endpoint: $db_endpoint"
+        print_info "DB name: $db_name"
+        exit 1
+    fi
+
+    if [ -z "$cache_endpoint" ]; then
+        print_error "Missing required cache configuration"
+        exit 1
+    fi
 
     # Generate random secret key for Django (using Python for reliability)
     local secret_key=$(python3 -c "import secrets; print(secrets.token_urlsafe(50))")
@@ -96,15 +115,32 @@ generate_ansible_inventory() {
         exit 1
     fi
 
+    # Validate outputs file is valid JSON first
+    if ! jq empty "$outputs_file" 2>/dev/null; then
+        print_error "Invalid JSON in Terraform outputs file"
+        print_info "File contents:"
+        head -20 "$outputs_file"
+        exit 1
+    fi
+
     # Get EC2 instance public IPs from Terraform outputs
     print_info "Reading instance IPs from: $outputs_file"
-    local instance_ips=$(cat "$outputs_file" | jq -r '.instance_public_ips.value | if type == "array" then .[] else . end' 2>/dev/null | grep -v '^null$' | tr '\n' ' ')
+
+    # Check if instance_public_ips exists in outputs
+    if ! jq -e '.instance_public_ips' "$outputs_file" >/dev/null 2>&1; then
+        print_error "instance_public_ips not found in Terraform outputs"
+        print_info "Available outputs:"
+        jq 'keys' "$outputs_file"
+        exit 1
+    fi
+
+    local instance_ips=$(jq -r '.instance_public_ips.value | if type == "array" then .[] else . end' "$outputs_file" 2>&1 | grep -v '^null$' | grep -E '^[0-9]+\.' | tr '\n' ' ')
 
     # Validate we have IPs
     if [ -z "$instance_ips" ] || [ "$instance_ips" = " " ]; then
-        print_error "No instance IPs found in Terraform outputs"
-        print_info "Outputs file contains:"
-        cat "$outputs_file" | jq '.instance_public_ips'
+        print_error "No valid instance IPs found in Terraform outputs"
+        print_info "instance_public_ips value:"
+        jq '.instance_public_ips' "$outputs_file"
         exit 1
     fi
 
