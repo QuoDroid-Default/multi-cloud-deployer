@@ -329,6 +329,9 @@ cmd_down() {
     validate_deployer_config
     load_environment_config "$env"
 
+    # Initialize Terraform before destroy (2026 best practice)
+    terraform_init "$env"
+
     terraform_destroy "$env"
 
     print_success "Environment destroyed: $env"
