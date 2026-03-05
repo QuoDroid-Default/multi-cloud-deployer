@@ -1,6 +1,7 @@
 [Unit]
 Description=Coco TestAI ASGI Server (Daphne)
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple

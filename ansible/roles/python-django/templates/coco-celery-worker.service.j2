@@ -1,6 +1,7 @@
 [Unit]
 Description=Coco TestAI Celery Worker
-After=network.target
+After=network-online.target coco-daphne.service
+Wants=network-online.target
 
 [Service]
 Type=simple

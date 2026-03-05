@@ -71,6 +71,39 @@
   become: yes
   become_user: "{{ app_user }}"
 
+- name: Create static files directory
+  file:
+    path: "{{ backend_dir }}/staticfiles"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+
+- name: Create media files directory
+  file:
+    path: "{{ backend_dir }}/media"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+
+- name: Wait for database to be ready
+  command: >
+    {{ backend_dir }}/venv/bin/python -c
+    "import psycopg2; psycopg2.connect(
+    host='{{ database_host }}',
+    port={{ database_port }},
+    user='{{ database_user }}',
+    password='{{ database_password }}',
+    dbname='{{ database_name }}'
+    ).close()"
+  register: db_check
+  until: db_check.rc == 0
+  retries: 30
+  delay: 10
+  become: yes
+  become_user: "{{ app_user }}"
+
 - name: Run Django migrations
   django_manage:
     command: migrate

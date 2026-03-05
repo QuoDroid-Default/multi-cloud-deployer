@@ -1,6 +1,7 @@
 [Unit]
 Description=Coco TestAI Celery Beat Scheduler
-After=network.target
+After=network-online.target coco-daphne.service coco-celery-worker.service
+Wants=network-online.target
 
 [Service]
 Type=simple
