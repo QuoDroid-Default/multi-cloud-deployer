@@ -113,6 +113,15 @@
   become_user: "{{ app_user }}"
   environment:
     DJANGO_SETTINGS_MODULE: "{{ django_settings_module }}"
+    DB_NAME: "{{ database_name }}"
+    DB_USER: "{{ database_user }}"
+    DB_PASSWORD: "{{ database_password }}"
+    DB_HOST: "{{ database_host }}"
+    DB_PORT: "{{ database_port }}"
+    REDIS_URL: "redis://{{ cache_host }}:{{ cache_port }}/0"
+    SECRET_KEY: "{{ django_secret_key }}"
+    ALLOWED_HOSTS: "{{ django_allowed_hosts }}"
+    DEBUG: "False"
 
 - name: Collect static files
   django_manage:
@@ -123,6 +132,15 @@
   become_user: "{{ app_user }}"
   environment:
     DJANGO_SETTINGS_MODULE: "{{ django_settings_module }}"
+    DB_NAME: "{{ database_name }}"
+    DB_USER: "{{ database_user }}"
+    DB_PASSWORD: "{{ database_password }}"
+    DB_HOST: "{{ database_host }}"
+    DB_PORT: "{{ database_port }}"
+    REDIS_URL: "redis://{{ cache_host }}:{{ cache_port }}/0"
+    SECRET_KEY: "{{ django_secret_key }}"
+    ALLOWED_HOSTS: "{{ django_allowed_hosts }}"
+    DEBUG: "False"
 
 - name: Create systemd service files
   template:
