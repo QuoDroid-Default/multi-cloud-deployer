@@ -6,7 +6,7 @@ app_dir: "/opt/app"
 backend_dir: "{{ app_dir }}/backend"
 
 python_version: "3.10"
-django_settings_module: "coco_testai.settings"
+django_settings_module: "copilot_orchestrator.settings"
 
 # Services to manage
 services:

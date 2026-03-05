@@ -11,7 +11,7 @@ WorkingDirectory={{ backend_dir }}
 Environment="PATH={{ backend_dir }}/venv/bin"
 Environment="DJANGO_SETTINGS_MODULE={{ django_settings_module }}"
 EnvironmentFile={{ backend_dir }}/.env
-ExecStart={{ backend_dir }}/venv/bin/celery -A coco_testai worker --loglevel=info
+ExecStart={{ backend_dir }}/venv/bin/celery -A copilot_orchestrator worker --loglevel=info
 Restart=always
 RestartSec=10
 
