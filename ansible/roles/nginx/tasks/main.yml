@@ -29,9 +29,3 @@
     name: nginx
     state: started
     enabled: yes
-
-handlers:
-  - name: restart nginx
-    systemd:
-      name: nginx
-      state: restarted

@@ -1,0 +1,7 @@
+---
+# Nginx Role - Handlers
+
+- name: restart nginx
+  systemd:
+    name: nginx
+    state: restarted
