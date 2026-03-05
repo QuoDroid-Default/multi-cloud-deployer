@@ -122,6 +122,8 @@
     SECRET_KEY: "{{ django_secret_key }}"
     ALLOWED_HOSTS: "{{ django_allowed_hosts }}"
     DEBUG: "False"
+    STATIC_ROOT: "{{ backend_dir }}/staticfiles"
+    MEDIA_ROOT: "{{ backend_dir }}/media"
 
 - name: Collect static files
   django_manage:
@@ -141,6 +143,8 @@
     SECRET_KEY: "{{ django_secret_key }}"
     ALLOWED_HOSTS: "{{ django_allowed_hosts }}"
     DEBUG: "False"
+    STATIC_ROOT: "{{ backend_dir }}/staticfiles"
+    MEDIA_ROOT: "{{ backend_dir }}/media"
 
 - name: Create systemd service files
   template:
