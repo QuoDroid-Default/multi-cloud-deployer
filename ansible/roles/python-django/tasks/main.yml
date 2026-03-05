@@ -53,12 +53,14 @@
   command: python3 -m venv {{ backend_dir }}/venv
   args:
     creates: "{{ backend_dir }}/venv/bin/activate"
+  become: yes
   become_user: "{{ app_user }}"
 
 - name: Install Python dependencies
   pip:
     requirements: "{{ backend_dir }}/requirements.txt"
     virtualenv: "{{ backend_dir }}/venv"
+  become: yes
   become_user: "{{ app_user }}"
 
 - name: Run Django migrations
@@ -66,6 +68,7 @@
     command: migrate
     app_path: "{{ backend_dir }}"
     virtualenv: "{{ backend_dir }}/venv"
+  become: yes
   become_user: "{{ app_user }}"
   environment:
     DJANGO_SETTINGS_MODULE: "{{ django_settings_module }}"
@@ -75,6 +78,7 @@
     command: collectstatic --noinput
     app_path: "{{ backend_dir }}"
     virtualenv: "{{ backend_dir }}/venv"
+  become: yes
   become_user: "{{ app_user }}"
   environment:
     DJANGO_SETTINGS_MODULE: "{{ django_settings_module }}"

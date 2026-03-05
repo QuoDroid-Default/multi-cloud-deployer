@@ -9,7 +9,7 @@
   systemd:
     name: "{{ item }}"
     state: restarted
-  loop:
+  with_items:
     - coco-daphne
     - coco-celery-worker
     - coco-celery-beat
