@@ -95,6 +95,17 @@
     group: "{{ app_user }}"
     mode: '0755'
 
+- name: Create workspace directories
+  file:
+    path: "{{ backend_dir }}/data/{{ item }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+  loop:
+    - projects
+    - workspaces
+
 - name: Wait for database to be ready
   command: >
     {{ backend_dir }}/venv/bin/python -c
