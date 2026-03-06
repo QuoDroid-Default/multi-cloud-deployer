@@ -369,7 +369,7 @@ resource "aws_cloudfront_distribution" "main" {
   comment = "${var.environment} CDN"
 
   origin {
-    domain_name = var.cdn_origin_domain
+    domain_name = var.cdn_origin_domain != "" ? var.cdn_origin_domain : aws_instance.app[0].public_ip
     origin_id   = "primary"
 
     custom_origin_config {
