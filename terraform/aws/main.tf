@@ -373,7 +373,8 @@ resource "aws_cloudfront_distribution" "main" {
   http_version    = "http2and3"
 
   origin {
-    domain_name = var.cdn_origin_domain != "" ? var.cdn_origin_domain : aws_instance.app[0].public_ip
+    # 2026 Best Practice: CloudFront requires DNS hostname, not IP address
+    domain_name = var.cdn_origin_domain != "" ? var.cdn_origin_domain : aws_instance.app[0].public_dns
     origin_id   = "primary"
 
     custom_origin_config {
