@@ -49,8 +49,18 @@ ansible_deploy() {
     # Generate random secret key for Django (using Python for reliability)
     local secret_key=$(python3 -c "import secrets; print(secrets.token_urlsafe(50))")
 
-    # Get first instance IP for ALLOWED_HOSTS
+    # Get first instance IP and DNS for ALLOWED_HOSTS
     local first_ip=$(cat "$inventory_file" | grep -E '^[0-9]' | head -1 | awk '{print $1}')
+
+    # Get EC2 public DNS name (for CloudFront origin)
+    local ec2_dns=$(terraform_output "$env" "instance_public_ips" 2>/dev/null | jq -r '.[0]' 2>/dev/null || echo "")
+
+    # Get CloudFront domain if CDN is enabled
+    local cdn_domain=$(terraform_output "$env" "cdn_domain" 2>/dev/null || echo "")
+
+    # Build ALLOWED_HOSTS list (2026 best practice: include all access points)
+    local allowed_hosts="$first_ip,localhost,127.0.0.1,.cloudfront.net"
+    [ -n "$cdn_domain" ] && [ "$cdn_domain" != "null" ] && allowed_hosts="$allowed_hosts,$cdn_domain"
 
     print_success "Configuration extracted successfully"
 
@@ -71,7 +81,7 @@ ansible_deploy() {
         -e "cache_host=$cache_endpoint" \
         -e "cache_port=$cache_port" \
         -e "django_secret_key=$secret_key" \
-        -e "django_allowed_hosts=$first_ip,localhost,127.0.0.1"
+        -e "django_allowed_hosts=$allowed_hosts"
 
     cd "$WORK_DIR"
 
