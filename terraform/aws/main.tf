@@ -368,6 +368,10 @@ resource "aws_cloudfront_distribution" "main" {
   enabled = true
   comment = "${var.environment} CDN"
 
+  # 2026 Best Practice: Enable compression for better performance
+  is_ipv6_enabled = true
+  http_version    = "http2and3"
+
   origin {
     domain_name = var.cdn_origin_domain != "" ? var.cdn_origin_domain : aws_instance.app[0].public_ip
     origin_id   = "primary"
@@ -375,7 +379,8 @@ resource "aws_cloudfront_distribution" "main" {
     custom_origin_config {
       http_port              = 80
       https_port             = 443
-      origin_protocol_policy = "https-only"
+      # 2026 Best Practice: Use http-only for EC2 origins (HTTPS terminates at CloudFront)
+      origin_protocol_policy = "http-only"
       origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
@@ -383,18 +388,20 @@ resource "aws_cloudfront_distribution" "main" {
   default_cache_behavior {
     target_origin_id       = "primary"
     viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD"]
+    allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods         = ["GET", "HEAD", "OPTIONS"]
+    compress               = true  # 2026 Best Practice: Enable gzip/brotli compression
 
     forwarded_values {
       query_string = true
+      headers      = ["Host", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"]
       cookies {
-        forward = "none"
+        forward = "all"  # Forward cookies for Django sessions
       }
     }
 
     min_ttl     = 0
-    default_ttl = 3600
+    default_ttl = 0      # 2026 Best Practice: Cache only when origin sends Cache-Control
     max_ttl     = 86400
   }
 
@@ -406,6 +413,7 @@ resource "aws_cloudfront_distribution" "main" {
 
   viewer_certificate {
     cloudfront_default_certificate = true
+    minimum_protocol_version       = "TLSv1.2_2021"  # 2026 Best Practice: Modern TLS only
   }
 
   tags = local.common_tags
