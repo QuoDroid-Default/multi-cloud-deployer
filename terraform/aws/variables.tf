@@ -1,5 +1,11 @@
 # AWS Infrastructure Variables
 
+variable "project_name" {
+  description = "Project name for resource naming"
+  type        = string
+  default     = "coco-testai"
+}
+
 variable "environment" {
   description = "Environment name (prod, demo, test, etc.)"
   type        = string
