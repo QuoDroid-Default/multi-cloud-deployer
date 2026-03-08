@@ -22,6 +22,11 @@
 
     - role: nginx
 
+    - role: docker
+      when:
+        - test_executor is defined
+        - test_executor == 'docker'
+
   tasks:
     - name: Display deployment summary
       debug:

@@ -16,8 +16,18 @@ output "instance_ips" {
 }
 
 output "instance_public_ips" {
-  description = "EC2 instance public IPs"
-  value       = aws_instance.app[*].public_ip
+  description = "EC2 instance public IPs (Elastic IPs - static)"
+  value       = aws_eip.app[*].public_ip
+}
+
+output "elastic_ip_ids" {
+  description = "Elastic IP allocation IDs"
+  value       = aws_eip.app[*].id
+}
+
+output "elastic_ip_associations" {
+  description = "Elastic IP association IDs"
+  value       = aws_eip_association.app[*].id
 }
 
 output "ssh_private_key" {
@@ -87,4 +97,25 @@ output "deployment_summary" {
     instance_count = var.instance_count
     instance_type  = var.instance_type
   }
+}
+
+# Test Execution Outputs
+output "test_execution_cluster_name" {
+  description = "ECS cluster name for test execution"
+  value       = var.enable_test_execution ? module.ecs_test_execution[0].cluster_name : null
+}
+
+output "test_execution_s3_bucket" {
+  description = "S3 bucket for test execution"
+  value       = var.enable_test_execution ? module.ecs_test_execution[0].s3_bucket_name : null
+}
+
+output "test_execution_ecr_repository" {
+  description = "ECR repository URL for test runner image"
+  value       = var.enable_test_execution ? module.ecs_test_execution[0].ecr_repository_url : null
+}
+
+output "test_execution_security_group" {
+  description = "Security group ID for test execution tasks"
+  value       = var.enable_test_execution ? module.ecs_test_execution[0].security_group_id : null
 }

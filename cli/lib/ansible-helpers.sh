@@ -62,6 +62,13 @@ ansible_deploy() {
     local allowed_hosts="$first_ip,localhost,127.0.0.1,.cloudfront.net"
     [ -n "$cdn_domain" ] && [ "$cdn_domain" != "null" ] && allowed_hosts="$allowed_hosts,$cdn_domain"
 
+    # Read test execution settings from environment config
+    local env_file="$WORK_DIR/.deployer/environments/${env}.yaml"
+    local test_executor="docker"  # Default
+    if [ -f "$env_file" ]; then
+        test_executor=$(yq eval '.infrastructure.test_execution.executor // "docker"' "$env_file")
+    fi
+
     print_success "Configuration extracted successfully"
 
     # Run Ansible playbook
@@ -81,7 +88,8 @@ ansible_deploy() {
         -e "cache_host=$cache_endpoint" \
         -e "cache_port=$cache_port" \
         -e "django_secret_key=$secret_key" \
-        -e "django_allowed_hosts=$allowed_hosts"
+        -e "django_allowed_hosts=$allowed_hosts" \
+        -e "test_executor=$test_executor"
 
     cd "$WORK_DIR"
 

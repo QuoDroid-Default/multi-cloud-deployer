@@ -187,3 +187,22 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# Test Execution Variables
+variable "enable_test_execution" {
+  description = "Enable ECS Fargate test execution infrastructure"
+  type        = bool
+  default     = false
+}
+
+variable "test_execution_cpu" {
+  description = "Default CPU units for test execution tasks (1024 = 1 vCPU)"
+  type        = string
+  default     = "1024"
+}
+
+variable "test_execution_memory" {
+  description = "Default memory for test execution tasks in MB"
+  type        = string
+  default     = "2048"
+}

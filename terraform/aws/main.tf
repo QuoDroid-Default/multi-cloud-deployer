@@ -231,6 +231,24 @@ resource "aws_instance" "app" {
   })
 }
 
+# Elastic IPs for EC2 Instances
+# Ensures instances keep same IP after stop/start
+resource "aws_eip" "app" {
+  count  = var.instance_count
+  domain = "vpc"
+
+  tags = merge(local.common_tags, {
+    Name = "${var.environment}-app-eip-${count.index + 1}"
+  })
+}
+
+# Associate Elastic IPs with EC2 Instances
+resource "aws_eip_association" "app" {
+  count         = var.instance_count
+  instance_id   = aws_instance.app[count.index].id
+  allocation_id = aws_eip.app[count.index].id
+}
+
 ################################################################################
 # DATABASE
 ################################################################################
@@ -374,7 +392,9 @@ resource "aws_cloudfront_distribution" "main" {
 
   origin {
     # 2026 Best Practice: CloudFront requires DNS hostname, not IP address
-    domain_name = var.cdn_origin_domain != "" ? var.cdn_origin_domain : aws_instance.app[0].public_dns
+    # Use Elastic IP DNS to ensure CloudFront works after EC2 stop/start
+    # Elastic IP DNS format: ec2-X-X-X-X.REGION.compute.amazonaws.com
+    domain_name = var.cdn_origin_domain != "" ? var.cdn_origin_domain : "ec2-${replace(aws_eip.app[0].public_ip, ".", "-")}.${var.region}.compute.amazonaws.com"
     origin_id   = "primary"
 
     custom_origin_config {
@@ -385,6 +405,9 @@ resource "aws_cloudfront_distribution" "main" {
       origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
+
+  # Ensure Elastic IP is associated before CloudFront references it
+  depends_on = [aws_eip_association.app]
 
   default_cache_behavior {
     target_origin_id       = "primary"
@@ -440,4 +463,24 @@ resource "aws_route53_record" "custom" {
   type    = each.value.type
   ttl     = 300
   records = [each.value.value]
+}
+
+################################################################################
+# TEST EXECUTION (ECS Fargate for Production)
+################################################################################
+
+module "ecs_test_execution" {
+  count  = var.enable_test_execution ? 1 : 0
+  source = "./modules/ecs-test-execution"
+
+  project_name = var.project_name
+  environment  = var.environment
+  region       = var.region
+  vpc_id       = aws_vpc.main.id
+  subnet_ids   = aws_subnet.public[*].id
+
+  default_cpu    = var.test_execution_cpu
+  default_memory = var.test_execution_memory
+
+  tags = local.common_tags
 }
