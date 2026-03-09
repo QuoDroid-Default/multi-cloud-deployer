@@ -50,13 +50,18 @@
     group: "{{ app_user }}"
     recurse: yes
 
-- name: Create Django .env file
-  template:
-    src: django.env.j2
+- name: Determine which .env file to use
+  set_fact:
+    env_file_name: "{{ '.env.prod' if env_name == 'prod' else '.env.dev' }}"
+
+- name: Copy appropriate .env file for environment
+  copy:
+    src: "{{ backend_dir }}/{{ env_file_name }}"
     dest: "{{ backend_dir }}/.env"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0600'
+    remote_src: yes
 
 - name: Create production settings override
   template:
@@ -79,6 +84,22 @@
     virtualenv: "{{ backend_dir }}/venv"
   become: yes
   become_user: "{{ app_user }}"
+
+- name: Install Node.js and npm (for Claude CLI in non-prod)
+  apt:
+    name:
+      - nodejs
+      - npm
+    state: present
+    update_cache: yes
+  when: env_name != 'prod'
+
+- name: Install Claude CLI via npm (non-prod only)
+  npm:
+    name: "@anthropic-ai/claude-code"
+    global: yes
+    state: present
+  when: env_name != 'prod'
 
 - name: Create static files directory
   file:
@@ -175,6 +196,7 @@
     - coco-daphne
     - coco-celery-worker
     - coco-celery-beat
+    - coco-grpc-agent
   notify:
     - reload systemd
     - restart services
@@ -189,3 +211,4 @@
     - coco-daphne
     - coco-celery-worker
     - coco-celery-beat
+    - coco-grpc-agent

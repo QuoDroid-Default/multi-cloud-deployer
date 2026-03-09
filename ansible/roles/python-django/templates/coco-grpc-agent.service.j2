@@ -1,0 +1,20 @@
+[Unit]
+Description=Coco TestAI gRPC Claude Agent Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ app_user }}
+Group={{ app_user }}
+WorkingDirectory={{ backend_dir }}
+Environment="PATH={{ backend_dir }}/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="DJANGO_SETTINGS_MODULE={{ django_settings_module }}"
+Environment="APP_ENV={{ env_name }}"
+EnvironmentFile={{ backend_dir }}/.env
+ExecStart={{ backend_dir }}/venv/bin/python claude_agent_service/server.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
