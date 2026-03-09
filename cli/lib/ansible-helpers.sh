@@ -89,6 +89,7 @@ ansible_deploy() {
         -e "cache_port=$cache_port" \
         -e "django_secret_key=$secret_key" \
         -e "django_allowed_hosts=$allowed_hosts" \
+        -e "cdn_domain=$cdn_domain" \
         -e "test_executor=$test_executor"
 
     cd "$WORK_DIR"
