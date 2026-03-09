@@ -152,17 +152,18 @@ generate_ansible_inventory() {
         exit 1
     fi
 
-    local instance_ips=$(jq -r '.instance_public_ips.value | if type == "array" then .[] else . end' "$outputs_file" 2>&1 | grep -v '^null$' | grep -E '^[0-9]+\.' | tr '\n' ' ')
+    local instance_ips=$(jq -r '.instance_public_ips.value | if type == "array" then .[] else . end' "$outputs_file" 2>&1 | grep -v '^null$' | grep -E '^[0-9]+\.')
 
     # Validate we have IPs
-    if [ -z "$instance_ips" ] || [ "$instance_ips" = " " ]; then
+    if [ -z "$instance_ips" ]; then
         print_error "No valid instance IPs found in Terraform outputs"
         print_info "instance_public_ips value:"
         jq '.instance_public_ips' "$outputs_file"
         exit 1
     fi
 
-    print_success "Found instance IPs: $instance_ips"
+    print_success "Found instance IPs:"
+    echo "$instance_ips" | while read ip; do echo "  - $ip"; done
 
     # Extract SSH private key from Terraform outputs
     local ssh_key_file="$WORK_DIR/.deployer/ansible/${env}-ssh-key.pem"
@@ -185,5 +186,6 @@ ansible_python_interpreter=/usr/bin/python3
 ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 EOF
 
-    print_success "Generated Ansible inventory with $(echo $instance_ips | wc -w) hosts"
+    local host_count=$(echo "$instance_ips" | wc -l)
+    print_success "Generated Ansible inventory with $host_count host(s)"
 }
