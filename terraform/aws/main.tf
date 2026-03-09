@@ -383,8 +383,10 @@ data "aws_caller_identity" "current" {}
 resource "aws_cloudfront_distribution" "main" {
   count = var.enable_cdn ? 1 : 0
 
-  enabled = true
-  comment = "${var.environment} CDN"
+  enabled             = true
+  wait_for_deployment = false  # Don't block on deployment - speeds up creation and destruction
+  retain_on_delete    = false  # Ensure distribution is fully deleted, not just removed from state
+  comment             = "${var.environment} CDN"
 
   # 2026 Best Practice: Enable compression for better performance
   is_ipv6_enabled = true
