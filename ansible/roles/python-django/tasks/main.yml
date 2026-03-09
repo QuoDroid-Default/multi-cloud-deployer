@@ -179,11 +179,12 @@
     - reload systemd
     - restart services
 
-- name: Enable and start services
+- name: Enable and restart services
   systemd:
     name: "{{ item }}"
     enabled: yes
-    state: started
+    state: restarted
+    daemon_reload: yes
   loop:
     - coco-daphne
     - coco-celery-worker
