@@ -50,18 +50,75 @@
     group: "{{ app_user }}"
     recurse: yes
 
-- name: Determine which .env file to use
+- name: Determine environment-specific settings
   set_fact:
-    env_file_name: "{{ '.env.prod' if env_name == 'prod' else '.env.dev' }}"
+    env_file_source: "{{ '.env.prod.example' if env_name == 'prod' else '.env.dev.example' }}"
+    env_file_dest: "{{ '.env.prod' if env_name == 'prod' else '.env.dev' }}"
+    is_prod: "{{ env_name == 'prod' }}"
 
-- name: Copy appropriate .env file for environment
+- name: Copy .env example file as base
   copy:
-    src: "{{ backend_dir }}/{{ env_file_name }}"
-    dest: "{{ backend_dir }}/.env"
+    src: "{{ backend_dir }}/{{ env_file_source }}"
+    dest: "{{ backend_dir }}/{{ env_file_dest }}"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: '0600'
     remote_src: yes
+
+- name: Generate Django secret key
+  set_fact:
+    generated_secret_key: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=50') }}"
+
+- name: Build ALLOWED_HOSTS and CORS origins
+  set_fact:
+    allowed_hosts_list: "{{ ansible_host }},localhost,127.0.0.1,.cloudfront.net{% if cdn_domain is defined and cdn_domain %},{{ cdn_domain }}{% endif %}"
+    cors_origins: "http://{{ ansible_host }}{% if cdn_domain is defined and cdn_domain %},https://{{ cdn_domain }}{% endif %}"
+    frontend_url: "{% if cdn_domain is defined and cdn_domain %}https://{{ cdn_domain }}{% else %}http://{{ ansible_host }}{% endif %}"
+
+- name: Extract Claude OAuth token from existing .env.dev (non-prod only)
+  shell: grep '^CLAUDE_CODE_OAUTH_TOKEN=' "{{ backend_dir }}/.env.dev" | cut -d'=' -f2
+  register: claude_token_result
+  when: not is_prod and backend_dir is defined
+  ignore_errors: yes
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Set Claude OAuth token variable
+  set_fact:
+    claude_oauth_token: "{{ claude_token_result.stdout if (claude_token_result is defined and claude_token_result.stdout is defined and claude_token_result.stdout != '') else '' }}"
+  when: not is_prod
+
+- name: Populate Django settings in .env file
+  lineinfile:
+    path: "{{ backend_dir }}/{{ env_file_dest }}"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0600'
+  loop:
+    - { regexp: '^SECRET_KEY=', line: 'SECRET_KEY={{ generated_secret_key }}' }
+    - { regexp: '^ALLOWED_HOSTS=', line: 'ALLOWED_HOSTS={{ allowed_hosts_list }}' }
+    - { regexp: '^DB_NAME=', line: 'DB_NAME={{ database_name }}' }
+    - { regexp: '^DB_USER=', line: 'DB_USER={{ database_user }}' }
+    - { regexp: '^DB_PASSWORD=', line: 'DB_PASSWORD={{ database_password }}' }
+    - { regexp: '^DB_HOST=', line: 'DB_HOST={{ database_host }}' }
+    - { regexp: '^DB_PORT=', line: 'DB_PORT={{ database_port }}' }
+    - { regexp: '^REDIS_URL=', line: 'REDIS_URL=redis://{{ cache_host }}:{{ cache_port }}/0' }
+    - { regexp: '^EXTRA_CORS_ORIGINS=', line: 'EXTRA_CORS_ORIGINS={{ cors_origins }}' }
+    - { regexp: '^EXTRA_CSRF_ORIGINS=', line: 'EXTRA_CSRF_ORIGINS={{ cors_origins }}' }
+    - { regexp: '^FRONTEND_URL=', line: 'FRONTEND_URL={{ frontend_url }}' }
+    - { regexp: '^WEBAPP_ORIGIN=', line: 'WEBAPP_ORIGIN={{ frontend_url }}' }
+
+- name: Populate Claude OAuth token (non-prod only)
+  lineinfile:
+    path: "{{ backend_dir }}/{{ env_file_dest }}"
+    regexp: '^CLAUDE_CODE_OAUTH_TOKEN='
+    line: 'CLAUDE_CODE_OAUTH_TOKEN={{ claude_oauth_token }}'
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0600'
+  when: not is_prod and claude_oauth_token is defined and claude_oauth_token != ''
 
 - name: Create production settings override
   template:
