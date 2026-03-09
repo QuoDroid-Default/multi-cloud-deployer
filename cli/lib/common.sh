@@ -32,6 +32,15 @@ load_size_preset() {
     export DB_STORAGE=$(yq eval ".presets.${preset}.${cloud}.database.allocated_storage" "$presets_file")
     export CACHE_NODE_TYPE=$(yq eval ".presets.${preset}.${cloud}.cache.node_type" "$presets_file")
 
+    # Check for environment-specific overrides
+    if [ -n "$ENV_FILE" ] && [ -f "$ENV_FILE" ]; then
+        local override_count=$(yq eval '.infrastructure.compute.autoscaling.max_instances // ""' "$ENV_FILE")
+        if [ -n "$override_count" ] && [ "$override_count" != "null" ]; then
+            print_info "  Override: Using $override_count instance(s) from environment config"
+            export INSTANCE_COUNT=$override_count
+        fi
+    fi
+
     print_success "Loaded size preset: $preset ($cloud)"
     print_info "  Compute: $INSTANCE_TYPE x $INSTANCE_COUNT"
     print_info "  Database: $DB_INSTANCE_CLASS ($DB_STORAGE GB)"
@@ -107,8 +116,8 @@ generate_tfvars() {
 
     mkdir -p "$(dirname "$output_file")"
 
-    # Load size preset
-    load_size_preset "$SIZE_PRESET" "$CLOUD_PROVIDER"
+    # Load size preset (with environment file for overrides)
+    ENV_FILE="$env_file" load_size_preset "$SIZE_PRESET" "$CLOUD_PROVIDER"
 
     # Read infrastructure overrides from environment file
     local db_backup_days=$(yq eval '.infrastructure.database.backup_retention_days // 7' "$env_file")
