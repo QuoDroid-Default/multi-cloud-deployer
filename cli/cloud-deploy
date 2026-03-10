@@ -274,9 +274,6 @@ cmd_create() {
     validate_deployer_config
     load_environment_config "$env"
 
-    # Clean up orphaned resources from previous failed deployments
-    cleanup_orphaned_resources "$env"
-
     # Run Terraform to create infrastructure
     terraform_init "$env"
     terraform_plan "$env"
