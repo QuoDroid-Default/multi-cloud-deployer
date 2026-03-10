@@ -80,6 +80,7 @@ ansible_deploy() {
     # Get Dodo Payments credentials from environment (set by deployment workflow)
     local dodo_api_key="${DODO_PAYMENTS_API_KEY:-}"
     local dodo_webhook_secret="${DODO_WEBHOOK_SECRET:-}"
+    local dodo_environment="${DODO_ENVIRONMENT:-test_mode}"  # Default to test_mode for safety
     local dodo_product_id_pro="${DODO_PRODUCT_ID_PRO:-}"
     local dodo_product_id_team="${DODO_PRODUCT_ID_TEAM:-}"
     local dodo_product_id_business="${DODO_PRODUCT_ID_BUSINESS:-}"
@@ -113,6 +114,7 @@ ansible_deploy() {
         -e "claude_credentials_json=$claude_creds" \
         -e "dodo_api_key=$dodo_api_key" \
         -e "dodo_webhook_secret=$dodo_webhook_secret" \
+        -e "dodo_environment=$dodo_environment" \
         -e "dodo_product_id_pro=$dodo_product_id_pro" \
         -e "dodo_product_id_team=$dodo_product_id_team" \
         -e "dodo_product_id_business=$dodo_product_id_business" \
