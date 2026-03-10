@@ -150,6 +150,19 @@
     - { regexp: '^DEFAULT_FROM_EMAIL=', line: 'DEFAULT_FROM_EMAIL={{ default_from_email }}' }
   when: use_ses is defined and use_ses != ''
 
+- name: Populate GitHub OAuth credentials
+  lineinfile:
+    path: "{{ backend_dir }}/{{ env_file_dest }}"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0600'
+  loop:
+    - { regexp: '^GITHUB_CLIENT_ID=', line: 'GITHUB_CLIENT_ID={{ github_client_id }}' }
+    - { regexp: '^GITHUB_CLIENT_SECRET=', line: 'GITHUB_CLIENT_SECRET={{ github_client_secret }}' }
+  when: github_client_id is defined and github_client_id != ''
+
 - name: Create .env symlink to environment-specific file
   file:
     src: "{{ backend_dir }}/{{ env_file_dest }}"

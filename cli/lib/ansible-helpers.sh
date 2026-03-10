@@ -89,6 +89,10 @@ ansible_deploy() {
     local aws_ses_region="${AWS_SES_REGION:-}"
     local default_from_email="${DEFAULT_FROM_EMAIL:-}"
 
+    # Get GitHub OAuth credentials from environment (optional)
+    local github_client_id="${GH_OAUTH_CLIENT_ID:-}"
+    local github_client_secret="${GH_OAUTH_CLIENT_SECRET:-}"
+
     ANSIBLE_ROLES_PATH="$DEPLOYER_ROOT/ansible/roles" ansible-playbook \
         -i "$inventory_file" \
         "$playbook" \
@@ -114,7 +118,9 @@ ansible_deploy() {
         -e "dodo_product_id_business=$dodo_product_id_business" \
         -e "use_ses=$use_ses" \
         -e "aws_ses_region=$aws_ses_region" \
-        -e "default_from_email=$default_from_email"
+        -e "default_from_email=$default_from_email" \
+        -e "github_client_id=$github_client_id" \
+        -e "github_client_secret=$github_client_secret"
 
     cd "$WORK_DIR"
 
