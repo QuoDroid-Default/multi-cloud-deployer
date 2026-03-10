@@ -268,7 +268,9 @@ resource "aws_iam_role_policy" "ses_send_email" {
         Effect = "Allow"
         Action = [
           "ses:SendEmail",
-          "ses:SendRawEmail"
+          "ses:SendRawEmail",
+          "ses:GetSendQuota",
+          "ses:GetSendStatistics"
         ]
         Resource = "*"
       }
