@@ -215,6 +215,62 @@ resource "aws_key_pair" "deployer" {
   tags = local.common_tags
 }
 
+################################################################################
+# IAM ROLE FOR EC2 (SES PERMISSIONS)
+################################################################################
+
+# IAM role for EC2 instances
+resource "aws_iam_role" "ec2_app_role" {
+  name = "${var.environment}-ec2-app-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${var.environment}-ec2-app-role"
+  })
+}
+
+# SES send email policy
+resource "aws_iam_role_policy" "ses_send_email" {
+  name = "${var.environment}-ses-send-email"
+  role = aws_iam_role.ec2_app_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ses:SendEmail",
+          "ses:SendRawEmail"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# IAM instance profile
+resource "aws_iam_instance_profile" "ec2_app_profile" {
+  name = "${var.environment}-ec2-app-profile"
+  role = aws_iam_role.ec2_app_role.name
+
+  tags = merge(local.common_tags, {
+    Name = "${var.environment}-ec2-app-profile"
+  })
+}
+
 # EC2 Instances
 resource "aws_instance" "app" {
   count = var.instance_count
@@ -225,6 +281,7 @@ resource "aws_instance" "app" {
   vpc_security_group_ids      = [aws_security_group.app.id]
   associate_public_ip_address = true
   key_name                    = aws_key_pair.deployer.key_name
+  iam_instance_profile        = aws_iam_instance_profile.ec2_app_profile.name
 
   tags = merge(local.common_tags, {
     Name = "${var.environment}-app-${count.index + 1}"
