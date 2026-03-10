@@ -120,6 +120,15 @@
     mode: '0600'
   when: not is_prod and claude_oauth_token is defined and claude_oauth_token != ''
 
+- name: Create .env symlink to environment-specific file
+  file:
+    src: "{{ backend_dir }}/{{ env_file_dest }}"
+    dest: "{{ backend_dir }}/.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    state: link
+    force: yes
+
 - name: Create production settings override
   template:
     src: settings_prod.py.j2
