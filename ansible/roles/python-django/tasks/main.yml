@@ -131,7 +131,6 @@
   loop:
     - { regexp: '^DODO_PAYMENTS_API_KEY=', line: 'DODO_PAYMENTS_API_KEY={{ dodo_api_key }}' }
     - { regexp: '^DODO_WEBHOOK_SECRET=', line: 'DODO_WEBHOOK_SECRET={{ dodo_webhook_secret }}' }
-    - { regexp: '^DODO_ENVIRONMENT=', line: 'DODO_ENVIRONMENT={{ dodo_environment }}' }
     - { regexp: '^DODO_PRODUCT_ID_PRO=', line: 'DODO_PRODUCT_ID_PRO={{ dodo_product_id_pro }}' }
     - { regexp: '^DODO_PRODUCT_ID_TEAM=', line: 'DODO_PRODUCT_ID_TEAM={{ dodo_product_id_team }}' }
     - { regexp: '^DODO_PRODUCT_ID_BUSINESS=', line: 'DODO_PRODUCT_ID_BUSINESS={{ dodo_product_id_business }}' }
