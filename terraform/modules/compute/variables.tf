@@ -10,4 +10,9 @@ variable "resource_group_name" {
   type    = string
   default = ""
 }
+variable "create_iam_instance_profile" {
+  type        = bool
+  default     = true
+  description = "Create IAM instance profile for EC2 instances with SES permissions"
+}
 variable "tags" { type = map(string) }

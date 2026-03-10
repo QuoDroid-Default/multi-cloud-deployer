@@ -7,10 +7,11 @@ locals {
 resource "aws_instance" "app" {
   count = local.is_aws ? var.instance_count : 0
 
-  ami           = data.aws_ami.ubuntu[0].id
-  instance_type = var.instance_type
-  subnet_id     = var.subnet_ids[count.index % length(var.subnet_ids)]
+  ami                    = data.aws_ami.ubuntu[0].id
+  instance_type          = var.instance_type
+  subnet_id              = var.subnet_ids[count.index % length(var.subnet_ids)]
   vpc_security_group_ids = var.security_groups
+  iam_instance_profile   = var.create_iam_instance_profile ? aws_iam_instance_profile.ec2_profile[0].name : null
 
   root_block_device {
     volume_size = 50

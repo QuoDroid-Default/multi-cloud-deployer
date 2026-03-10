@@ -136,6 +136,20 @@
     - { regexp: '^DODO_PRODUCT_ID_BUSINESS=', line: 'DODO_PRODUCT_ID_BUSINESS={{ dodo_product_id_business }}' }
   when: dodo_api_key is defined and dodo_api_key != ''
 
+- name: Populate AWS SES email configuration (only if explicitly provided)
+  lineinfile:
+    path: "{{ backend_dir }}/{{ env_file_dest }}"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0600'
+  loop:
+    - { regexp: '^USE_SES=', line: 'USE_SES={{ use_ses }}' }
+    - { regexp: '^AWS_SES_REGION=', line: 'AWS_SES_REGION={{ aws_ses_region }}' }
+    - { regexp: '^DEFAULT_FROM_EMAIL=', line: 'DEFAULT_FROM_EMAIL={{ default_from_email }}' }
+  when: use_ses is defined and use_ses != ''
+
 - name: Create .env symlink to environment-specific file
   file:
     src: "{{ backend_dir }}/{{ env_file_dest }}"

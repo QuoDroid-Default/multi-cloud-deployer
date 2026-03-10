@@ -84,6 +84,11 @@ ansible_deploy() {
     local dodo_product_id_team="${DODO_PRODUCT_ID_TEAM:-}"
     local dodo_product_id_business="${DODO_PRODUCT_ID_BUSINESS:-}"
 
+    # Get AWS SES email configuration from environment (optional - uses .env.example defaults if not provided)
+    local use_ses="${USE_SES:-}"
+    local aws_ses_region="${AWS_SES_REGION:-}"
+    local default_from_email="${DEFAULT_FROM_EMAIL:-}"
+
     ANSIBLE_ROLES_PATH="$DEPLOYER_ROOT/ansible/roles" ansible-playbook \
         -i "$inventory_file" \
         "$playbook" \
@@ -106,7 +111,10 @@ ansible_deploy() {
         -e "dodo_webhook_secret=$dodo_webhook_secret" \
         -e "dodo_product_id_pro=$dodo_product_id_pro" \
         -e "dodo_product_id_team=$dodo_product_id_team" \
-        -e "dodo_product_id_business=$dodo_product_id_business"
+        -e "dodo_product_id_business=$dodo_product_id_business" \
+        -e "use_ses=$use_ses" \
+        -e "aws_ses_region=$aws_ses_region" \
+        -e "default_from_email=$default_from_email"
 
     cd "$WORK_DIR"
 
