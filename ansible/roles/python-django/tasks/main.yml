@@ -228,6 +228,22 @@
     mode: '0600'
   when: env_name != 'prod' and claude_credentials_json is defined and claude_credentials_json != ''
 
+- name: Extract OAuth token from Claude credentials JSON (non-prod only)
+  shell: |
+    if [ -f "/home/{{ app_user }}/.claude/.credentials.json" ]; then
+      cat "/home/{{ app_user }}/.claude/.credentials.json" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('access_token', ''))"
+    fi
+  register: claude_oauth_token_from_creds
+  when: env_name != 'prod'
+  ignore_errors: yes
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Update Claude OAuth token from credentials file (non-prod only)
+  set_fact:
+    claude_oauth_token: "{{ claude_oauth_token_from_creds.stdout if (claude_oauth_token_from_creds is defined and claude_oauth_token_from_creds.stdout is defined and claude_oauth_token_from_creds.stdout != '') else claude_oauth_token | default('') }}"
+  when: env_name != 'prod'
+
 - name: Create static files directory
   file:
     path: "{{ backend_dir }}/staticfiles"
