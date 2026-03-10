@@ -95,7 +95,8 @@ resource "aws_route_table_association" "public" {
 
 # Security Groups
 resource "aws_security_group" "app" {
-  name_prefix = "${var.environment}-app-"
+  name        = "${var.environment}-app-sg"
+  description = "Security group for application servers"
   vpc_id      = aws_vpc.main.id
 
   ingress {
@@ -127,13 +128,18 @@ resource "aws_security_group" "app" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   tags = merge(local.common_tags, {
     Name = "${var.environment}-app-sg"
   })
 }
 
 resource "aws_security_group" "db" {
-  name_prefix = "${var.environment}-db-"
+  name        = "${var.environment}-db-sg"
+  description = "Security group for RDS database"
   vpc_id      = aws_vpc.main.id
 
   ingress {
@@ -150,13 +156,18 @@ resource "aws_security_group" "db" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   tags = merge(local.common_tags, {
     Name = "${var.environment}-db-sg"
   })
 }
 
 resource "aws_security_group" "cache" {
-  name_prefix = "${var.environment}-cache-"
+  name        = "${var.environment}-cache-sg"
+  description = "Security group for ElastiCache cluster"
   vpc_id      = aws_vpc.main.id
 
   ingress {
@@ -171,6 +182,10 @@ resource "aws_security_group" "cache" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 
   tags = merge(local.common_tags, {
@@ -351,6 +366,13 @@ resource "aws_db_instance" "main" {
   backup_retention_period = var.database_backup_retention_days
   skip_final_snapshot    = true
 
+  lifecycle {
+    # Prevent unnecessary recreation on minor version updates
+    ignore_changes = [
+      engine_version,  # Allow minor version auto-upgrades
+    ]
+  }
+
   tags = merge(local.common_tags, {
     Name = "${var.environment}-db"
   })
@@ -380,6 +402,13 @@ resource "aws_elasticache_cluster" "main" {
 
   subnet_group_name  = aws_elasticache_subnet_group.main.name
   security_group_ids = [aws_security_group.cache.id]
+
+  lifecycle {
+    # Prevent unnecessary recreation on minor version updates
+    ignore_changes = [
+      engine_version,  # Allow minor version auto-upgrades
+    ]
+  }
 
   tags = merge(local.common_tags, {
     Name = "${var.environment}-cache"
