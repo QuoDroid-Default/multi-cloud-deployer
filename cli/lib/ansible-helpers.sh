@@ -74,6 +74,9 @@ ansible_deploy() {
     # Run Ansible playbook
     cd "$DEPLOYER_ROOT/ansible"
 
+    # Get Claude credentials from environment (set by deployment workflow)
+    local claude_creds="${CLAUDE_CREDENTIALS_JSON:-}"
+
     ANSIBLE_ROLES_PATH="$DEPLOYER_ROOT/ansible/roles" ansible-playbook \
         -i "$inventory_file" \
         "$playbook" \
@@ -90,7 +93,8 @@ ansible_deploy() {
         -e "django_secret_key=$secret_key" \
         -e "django_allowed_hosts=$allowed_hosts" \
         -e "cdn_domain=$cdn_domain" \
-        -e "test_executor=$test_executor"
+        -e "test_executor=$test_executor" \
+        -e "claude_credentials_json=$claude_creds"
 
     cd "$WORK_DIR"
 

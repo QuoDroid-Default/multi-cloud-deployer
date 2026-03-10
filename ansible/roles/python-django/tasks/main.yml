@@ -158,6 +158,24 @@
     state: present
   when: env_name != 'prod'
 
+- name: Create .claude directory for credentials (non-prod only)
+  file:
+    path: "/home/{{ app_user }}/.claude"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0700'
+  when: env_name != 'prod'
+
+- name: Restore Claude credentials from GitHub Secret (non-prod only)
+  copy:
+    content: "{{ claude_credentials_json | b64decode }}"
+    dest: "/home/{{ app_user }}/.claude/.credentials.json"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0600'
+  when: env_name != 'prod' and claude_credentials_json is defined and claude_credentials_json != ''
+
 - name: Create static files directory
   file:
     path: "{{ backend_dir }}/staticfiles"
