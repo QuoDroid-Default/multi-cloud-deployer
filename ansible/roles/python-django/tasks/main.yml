@@ -120,6 +120,22 @@
     mode: '0600'
   when: not is_prod and claude_oauth_token is defined and claude_oauth_token != ''
 
+- name: Populate Dodo Payments credentials
+  lineinfile:
+    path: "{{ backend_dir }}/{{ env_file_dest }}"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0600'
+  loop:
+    - { regexp: '^DODO_PAYMENTS_API_KEY=', line: 'DODO_PAYMENTS_API_KEY={{ dodo_api_key }}' }
+    - { regexp: '^DODO_WEBHOOK_SECRET=', line: 'DODO_WEBHOOK_SECRET={{ dodo_webhook_secret }}' }
+    - { regexp: '^DODO_PRODUCT_ID_PRO=', line: 'DODO_PRODUCT_ID_PRO={{ dodo_product_id_pro }}' }
+    - { regexp: '^DODO_PRODUCT_ID_TEAM=', line: 'DODO_PRODUCT_ID_TEAM={{ dodo_product_id_team }}' }
+    - { regexp: '^DODO_PRODUCT_ID_BUSINESS=', line: 'DODO_PRODUCT_ID_BUSINESS={{ dodo_product_id_business }}' }
+  when: dodo_api_key is defined and dodo_api_key != ''
+
 - name: Create .env symlink to environment-specific file
   file:
     src: "{{ backend_dir }}/{{ env_file_dest }}"
