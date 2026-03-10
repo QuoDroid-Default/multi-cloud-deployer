@@ -296,3 +296,4 @@
     - coco-celery-worker
     - coco-celery-beat
     - coco-grpc-agent
+  ignore_errors: yes
