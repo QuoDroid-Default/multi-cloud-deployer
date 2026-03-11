@@ -304,6 +304,7 @@
           RAISE NOTICE 'No orphaned types found, proceeding with migration';
         END IF;
       END $$;
+  run_once: true
   ignore_errors: yes
   become: yes
   become_user: "{{ app_user }}"
@@ -313,6 +314,7 @@
     command: migrate
     app_path: "{{ backend_dir }}"
     virtualenv: "{{ backend_dir }}/venv"
+  run_once: true
   become: yes
   become_user: "{{ app_user }}"
   environment:
