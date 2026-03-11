@@ -265,6 +265,49 @@
   become: yes
   become_user: "{{ app_user }}"
 
+- name: Clean up orphaned PostgreSQL types before migration
+  postgresql_query:
+    login_host: "{{ database_host }}"
+    login_port: "{{ database_port }}"
+    login_user: "{{ database_user }}"
+    login_password: "{{ database_password }}"
+    db: "{{ database_name }}"
+    query: |
+      DO $$
+      DECLARE
+        type_exists boolean;
+        table_exists boolean;
+      BEGIN
+        -- Check if interpreter_user type exists
+        SELECT EXISTS (
+          SELECT 1 FROM pg_type WHERE typname = 'interpreter_user'
+        ) INTO type_exists;
+
+        -- Check if interpreter_user table exists
+        SELECT EXISTS (
+          SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'interpreter_user'
+        ) INTO table_exists;
+
+        -- If type exists but table doesn't, drop all orphaned types
+        IF type_exists AND NOT table_exists THEN
+          RAISE NOTICE 'Orphaned types detected, cleaning up...';
+          DROP TYPE IF EXISTS interpreter_user CASCADE;
+          DROP TYPE IF EXISTS interpreter_tenant CASCADE;
+          DROP TYPE IF EXISTS interpreter_project CASCADE;
+          DROP TYPE IF EXISTS interpreter_clientserverconversation CASCADE;
+          DROP TYPE IF EXISTS interpreter_clientserverturn CASCADE;
+          DROP TYPE IF EXISTS interpreter_serveraiconversation CASCADE;
+          DROP TYPE IF EXISTS interpreter_serveraiturn CASCADE;
+          DROP TYPE IF EXISTS interpreter_action CASCADE;
+          RAISE NOTICE 'Orphaned types cleaned up successfully';
+        ELSE
+          RAISE NOTICE 'No orphaned types found, proceeding with migration';
+        END IF;
+      END $$;
+  ignore_errors: yes
+  become: yes
+  become_user: "{{ app_user }}"
+
 - name: Run Django migrations
   django_manage:
     command: migrate
