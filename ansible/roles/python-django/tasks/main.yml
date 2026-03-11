@@ -88,6 +88,40 @@
     claude_oauth_token: "{{ claude_token_result.stdout if (claude_token_result is defined and claude_token_result.stdout is defined and claude_token_result.stdout != '') else '' }}"
   when: not is_prod
 
+- name: Create .claude directory for credentials (non-prod only)
+  file:
+    path: "/home/{{ app_user }}/.claude"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0700'
+  when: env_name != 'prod'
+
+- name: Restore Claude credentials from GitHub Secret (non-prod only)
+  copy:
+    content: "{{ claude_credentials_json | b64decode }}"
+    dest: "/home/{{ app_user }}/.claude/.credentials.json"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0600'
+  when: env_name != 'prod' and claude_credentials_json is defined and claude_credentials_json != ''
+
+- name: Extract OAuth token from Claude credentials JSON (non-prod only)
+  shell: |
+    if [ -f "/home/{{ app_user }}/.claude/.credentials.json" ]; then
+      cat "/home/{{ app_user }}/.claude/.credentials.json" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('access_token', ''))"
+    fi
+  register: claude_oauth_token_from_creds
+  when: env_name != 'prod'
+  ignore_errors: yes
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Update Claude OAuth token from credentials file (non-prod only)
+  set_fact:
+    claude_oauth_token: "{{ claude_oauth_token_from_creds.stdout if (claude_oauth_token_from_creds is defined and claude_oauth_token_from_creds.stdout is defined and claude_oauth_token_from_creds.stdout != '') else claude_oauth_token | default('') }}"
+  when: env_name != 'prod'
+
 - name: Populate Django settings in .env file
   lineinfile:
     path: "{{ backend_dir }}/{{ env_file_dest }}"
@@ -208,40 +242,6 @@
     name: "@anthropic-ai/claude-code"
     global: yes
     state: present
-  when: env_name != 'prod'
-
-- name: Create .claude directory for credentials (non-prod only)
-  file:
-    path: "/home/{{ app_user }}/.claude"
-    state: directory
-    owner: "{{ app_user }}"
-    group: "{{ app_user }}"
-    mode: '0700'
-  when: env_name != 'prod'
-
-- name: Restore Claude credentials from GitHub Secret (non-prod only)
-  copy:
-    content: "{{ claude_credentials_json | b64decode }}"
-    dest: "/home/{{ app_user }}/.claude/.credentials.json"
-    owner: "{{ app_user }}"
-    group: "{{ app_user }}"
-    mode: '0600'
-  when: env_name != 'prod' and claude_credentials_json is defined and claude_credentials_json != ''
-
-- name: Extract OAuth token from Claude credentials JSON (non-prod only)
-  shell: |
-    if [ -f "/home/{{ app_user }}/.claude/.credentials.json" ]; then
-      cat "/home/{{ app_user }}/.claude/.credentials.json" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('access_token', ''))"
-    fi
-  register: claude_oauth_token_from_creds
-  when: env_name != 'prod'
-  ignore_errors: yes
-  become: yes
-  become_user: "{{ app_user }}"
-
-- name: Update Claude OAuth token from credentials file (non-prod only)
-  set_fact:
-    claude_oauth_token: "{{ claude_oauth_token_from_creds.stdout if (claude_oauth_token_from_creds is defined and claude_oauth_token_from_creds.stdout is defined and claude_oauth_token_from_creds.stdout != '') else claude_oauth_token | default('') }}"
   when: env_name != 'prod'
 
 - name: Create static files directory
