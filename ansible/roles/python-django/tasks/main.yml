@@ -14,6 +14,7 @@
       - supervisor
       - rsync
       - git
+      - jq
     state: present
     update_cache: yes
 
@@ -94,8 +95,9 @@
   when: env_name != 'prod' and claude_credentials_json is defined and claude_credentials_json != ''
 
 # Claude SDK will automatically read from ~/.claude/.credentials.json
-# and handle token refresh using the refreshToken
-# No need to extract to environment variable
+# when HOME=/home/app is set in systemd service (which we configured)
+# Both CLI tool and SDK will use this file for authentication
+# No need to extract token to environment variable!
 
 - name: Populate Django settings in .env file
   lineinfile:
@@ -119,8 +121,8 @@
     - { regexp: '^FRONTEND_URL=', line: 'FRONTEND_URL={{ frontend_url }}' }
     - { regexp: '^WEBAPP_ORIGIN=', line: 'WEBAPP_ORIGIN={{ frontend_url }}' }
 
-# Don't set CLAUDE_CODE_OAUTH_TOKEN - let SDK use ~/.claude/.credentials.json
-# This enables automatic token refresh using the refreshToken
+# No need to populate CLAUDE_CODE_OAUTH_TOKEN in .env
+# SDK reads directly from ~/.claude/.credentials.json when HOME is set correctly
 
 - name: Populate Dodo Payments credentials
   lineinfile:
