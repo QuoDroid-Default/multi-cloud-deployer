@@ -109,7 +109,7 @@
 - name: Extract OAuth token from Claude credentials JSON (non-prod only)
   shell: |
     if [ -f "/home/{{ app_user }}/.claude/.credentials.json" ]; then
-      cat "/home/{{ app_user }}/.claude/.credentials.json" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('access_token', ''))"
+      cat "/home/{{ app_user }}/.claude/.credentials.json" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('claudeAiOauth', {}).get('accessToken', '') or data.get('access_token', ''))"
     fi
   register: claude_oauth_token_from_creds
   when: env_name != 'prod'
