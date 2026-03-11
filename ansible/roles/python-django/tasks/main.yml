@@ -106,21 +106,9 @@
     mode: '0600'
   when: env_name != 'prod' and claude_credentials_json is defined and claude_credentials_json != ''
 
-- name: Extract OAuth token from Claude credentials JSON (non-prod only)
-  shell: |
-    if [ -f "/home/{{ app_user }}/.claude/.credentials.json" ]; then
-      cat "/home/{{ app_user }}/.claude/.credentials.json" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data.get('claudeAiOauth', {}).get('accessToken', '') or data.get('access_token', ''))"
-    fi
-  register: claude_oauth_token_from_creds
-  when: env_name != 'prod'
-  ignore_errors: yes
-  become: yes
-  become_user: "{{ app_user }}"
-
-- name: Update Claude OAuth token from credentials file (non-prod only)
-  set_fact:
-    claude_oauth_token: "{{ claude_oauth_token_from_creds.stdout if (claude_oauth_token_from_creds is defined and claude_oauth_token_from_creds.stdout is defined and claude_oauth_token_from_creds.stdout != '') else claude_oauth_token | default('') }}"
-  when: env_name != 'prod'
+# Claude SDK will automatically read from ~/.claude/.credentials.json
+# and handle token refresh using the refreshToken
+# No need to extract to environment variable
 
 - name: Populate Django settings in .env file
   lineinfile:
@@ -144,15 +132,8 @@
     - { regexp: '^FRONTEND_URL=', line: 'FRONTEND_URL={{ frontend_url }}' }
     - { regexp: '^WEBAPP_ORIGIN=', line: 'WEBAPP_ORIGIN={{ frontend_url }}' }
 
-- name: Populate Claude OAuth token (non-prod only)
-  lineinfile:
-    path: "{{ backend_dir }}/{{ env_file_dest }}"
-    regexp: '^CLAUDE_CODE_OAUTH_TOKEN='
-    line: 'CLAUDE_CODE_OAUTH_TOKEN={{ claude_oauth_token }}'
-    owner: "{{ app_user }}"
-    group: "{{ app_user }}"
-    mode: '0600'
-  when: not is_prod and claude_oauth_token is defined and claude_oauth_token != ''
+# Don't set CLAUDE_CODE_OAUTH_TOKEN - let SDK use ~/.claude/.credentials.json
+# This enables automatic token refresh using the refreshToken
 
 - name: Populate Dodo Payments credentials
   lineinfile:
