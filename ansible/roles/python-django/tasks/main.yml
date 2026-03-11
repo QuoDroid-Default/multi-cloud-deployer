@@ -75,19 +75,6 @@
     cors_origins: "http://{{ ansible_host }}{% if cdn_domain is defined and cdn_domain %},https://{{ cdn_domain }}{% endif %}"
     frontend_url: "{% if cdn_domain is defined and cdn_domain %}https://{{ cdn_domain }}{% else %}http://{{ ansible_host }}{% endif %}"
 
-- name: Extract Claude OAuth token from existing .env.dev (non-prod only)
-  shell: grep '^CLAUDE_CODE_OAUTH_TOKEN=' "{{ backend_dir }}/.env.dev" | cut -d'=' -f2
-  register: claude_token_result
-  when: not is_prod and backend_dir is defined
-  ignore_errors: yes
-  become: yes
-  become_user: "{{ app_user }}"
-
-- name: Set Claude OAuth token variable
-  set_fact:
-    claude_oauth_token: "{{ claude_token_result.stdout if (claude_token_result is defined and claude_token_result.stdout is defined and claude_token_result.stdout != '') else '' }}"
-  when: not is_prod
-
 - name: Create .claude directory for credentials (non-prod only)
   file:
     path: "/home/{{ app_user }}/.claude"
