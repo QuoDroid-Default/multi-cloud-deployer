@@ -187,11 +187,21 @@
   become: yes
   become_user: "{{ app_user }}"
 
+- name: Remove old Node.js packages (non-prod only)
+  apt:
+    name:
+      - nodejs
+      - npm
+    state: absent
+    purge: yes
+    autoremove: yes
+  when: env_name != 'prod'
+
 - name: Download and run NodeSource setup script for Node.js 20 LTS (non-prod only)
   shell: |
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
   args:
-    creates: /etc/apt/sources.list.d/nodesource.list
+    creates: /etc/apt/sources.list.d/nodesource.sources
   when: env_name != 'prod'
 
 - name: Install Node.js 20 (includes npm) for Claude CLI (non-prod only)
