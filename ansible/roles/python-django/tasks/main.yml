@@ -187,17 +187,11 @@
   become: yes
   become_user: "{{ app_user }}"
 
-- name: Add NodeSource GPG key for Node.js 20 LTS (non-prod only)
-  apt_key:
-    url: https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
-    state: present
-  when: env_name != 'prod'
-
-- name: Add NodeSource repository for Node.js 20 LTS (non-prod only)
-  apt_repository:
-    repo: "deb https://deb.nodesource.com/node_20.x {{ ansible_distribution_release }} main"
-    state: present
-    filename: nodesource
+- name: Download and run NodeSource setup script for Node.js 20 LTS (non-prod only)
+  shell: |
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  args:
+    creates: /etc/apt/sources.list.d/nodesource.list
   when: env_name != 'prod'
 
 - name: Install Node.js 20 (includes npm) for Claude CLI (non-prod only)
