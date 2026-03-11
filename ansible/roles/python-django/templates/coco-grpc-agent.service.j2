@@ -12,7 +12,6 @@ Environment="HOME=/home/{{ app_user }}"
 Environment="PATH={{ backend_dir }}/venv/bin:/usr/local/bin:/usr/bin:/bin"
 Environment="DJANGO_SETTINGS_MODULE={{ django_settings_module }}"
 Environment="APP_ENV={{ env_name }}"
-EnvironmentFile={{ backend_dir }}/.env
 ExecStart={{ backend_dir }}/venv/bin/python claude_agent_service/server.py
 Restart=always
 RestartSec=10

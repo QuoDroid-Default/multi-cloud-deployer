@@ -165,15 +165,6 @@
     - { regexp: '^GITHUB_CLIENT_SECRET=', line: 'GITHUB_CLIENT_SECRET={{ github_client_secret }}' }
   when: github_client_id is defined and github_client_id != ''
 
-- name: Create .env symlink to environment-specific file
-  file:
-    src: "{{ backend_dir }}/{{ env_file_dest }}"
-    dest: "{{ backend_dir }}/.env"
-    owner: "{{ app_user }}"
-    group: "{{ app_user }}"
-    state: link
-    force: yes
-
 - name: Create production settings override
   template:
     src: settings_prod.py.j2
