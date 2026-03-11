@@ -8,6 +8,7 @@ Type=simple
 User={{ app_user }}
 Group={{ app_user }}
 WorkingDirectory={{ backend_dir }}
+Environment="HOME=/home/{{ app_user }}"
 Environment="PATH={{ backend_dir }}/venv/bin:/usr/local/bin:/usr/bin:/bin"
 Environment="DJANGO_SETTINGS_MODULE={{ django_settings_module }}"
 Environment="APP_ENV={{ env_name }}"
