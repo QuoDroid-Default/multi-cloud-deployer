@@ -1,11 +1,10 @@
 ---
 # React Vite Role - Main Tasks
 
-- name: Install Node.js
+- name: Verify Node.js is installed (already installed in python-django role)
   apt:
     name:
       - nodejs
-      - npm
     state: present
 
 - name: Create frontend directory
