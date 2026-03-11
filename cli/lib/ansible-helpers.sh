@@ -69,6 +69,11 @@ ansible_deploy() {
         test_executor=$(yq eval '.infrastructure.test_execution.executor // "docker"' "$env_file")
     fi
 
+    # Read application environment from YAML (dev vs prod for .env file selection)
+    # Defaults to filename if not specified (backward compatibility)
+    local app_env=$(yq eval '.environment // "'"$env"'"' "$env_file")
+    print_info "Infrastructure: $env, Application environment: $app_env"
+
     print_success "Configuration extracted successfully"
 
     # Run Ansible playbook
@@ -96,7 +101,7 @@ ansible_deploy() {
     ANSIBLE_ROLES_PATH="$DEPLOYER_ROOT/ansible/roles" ansible-playbook \
         -i "$inventory_file" \
         "$playbook" \
-        -e "env_name=$env" \
+        -e "env_name=$app_env" \
         -e "clone_dir=$CLONE_DIR" \
         -e "config_dir=$DEPLOYER_DIR" \
         -e "database_host=$db_endpoint" \
