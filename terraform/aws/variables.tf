@@ -48,6 +48,12 @@ variable "instance_count" {
   default     = 1
 }
 
+variable "root_volume_size" {
+  description = "Root EBS volume size in GB (AWS Free Tier includes 30GB)"
+  type        = number
+  default     = 30
+}
+
 # Database variables
 variable "database_engine" {
   description = "Database engine (postgres, mysql, mariadb)"

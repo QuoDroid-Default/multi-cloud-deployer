@@ -129,6 +129,9 @@ generate_tfvars() {
 
     local storage_versioning=$(yq eval '.infrastructure.storage.versioning // false' "$env_file")
 
+    # Read compute overrides
+    local root_volume_size=$(yq eval '.infrastructure.compute.root_volume_size // 30' "$env_file")
+
     # Read CDN/DNS settings
     local enable_cdn=$(yq eval '.infrastructure.cdn.enabled // false' "$env_file")
     local enable_dns=$(yq eval '.infrastructure.dns.enabled // false' "$env_file")
@@ -152,6 +155,7 @@ region = "$REGION"
 # Compute
 instance_type = "$INSTANCE_TYPE"
 instance_count = $INSTANCE_COUNT
+root_volume_size = $root_volume_size
 
 # Database
 database_engine = "postgres"

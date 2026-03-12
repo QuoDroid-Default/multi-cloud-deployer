@@ -300,6 +300,13 @@ resource "aws_instance" "app" {
   key_name                    = aws_key_pair.deployer.key_name
   iam_instance_profile        = aws_iam_instance_profile.ec2_app_profile.name
 
+  root_block_device {
+    volume_size           = var.root_volume_size
+    volume_type           = "gp3"  # General Purpose SSD (faster and cheaper than gp2)
+    delete_on_termination = true
+    encrypted             = true
+  }
+
   tags = merge(local.common_tags, {
     Name = "${var.environment}-app-${count.index + 1}"
   })
