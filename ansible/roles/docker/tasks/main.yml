@@ -65,11 +65,36 @@
     append: yes
   become: yes
 
-- name: Pull Playwright image for test execution
+- name: Install AWS CLI for ECR authentication
+  apt:
+    name: awscli
+    state: present
+    update_cache: yes
+  become: yes
+  when: ecr_repository_url is defined and ecr_repository_url != ""
+
+- name: Login to Amazon ECR
+  shell: |
+    aws ecr get-login-password --region {{ aws_region | default('us-east-1') }} | \
+    docker login --username AWS --password-stdin {{ ecr_repository_url.split('/')[0] }}
+  become: yes
+  when: ecr_repository_url is defined and ecr_repository_url != ""
+  ignore_errors: yes
+
+- name: Pull custom test runner image from ECR
+  docker_image:
+    name: "{{ ecr_repository_url }}:latest"
+    source: pull
+  become: yes
+  when: ecr_repository_url is defined and ecr_repository_url != ""
+  ignore_errors: yes  # Don't fail if image pull fails (can retry later)
+
+- name: Pull Microsoft Playwright image as fallback
   docker_image:
     name: mcr.microsoft.com/playwright/python:v1.40.0-jammy
     source: pull
   become: yes
+  when: ecr_repository_url is not defined or ecr_repository_url == ""
   ignore_errors: yes  # Don't fail if image pull fails (can retry later)
 
 - name: Create test execution directories
