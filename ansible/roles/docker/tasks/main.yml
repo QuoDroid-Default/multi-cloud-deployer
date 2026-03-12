@@ -71,6 +71,20 @@
   register: test_runner_dockerfile
   when: backend_dir is defined
 
+- name: Clean up Docker system before build to free disk space
+  command: docker system prune -a -f --volumes
+  become: yes
+  when:
+    - backend_dir is defined
+    - test_runner_dockerfile.stat.exists
+  register: docker_cleanup
+  changed_when: docker_cleanup.stdout is search('Total reclaimed space')
+
+- name: Display cleanup results
+  debug:
+    msg: "{{ docker_cleanup.stdout_lines | default(['No cleanup needed']) }}"
+  when: docker_cleanup is defined
+
 - name: Display test-runner source location
   debug:
     msg: "Test runner source found at {{ backend_dir }}/test-runner/"
