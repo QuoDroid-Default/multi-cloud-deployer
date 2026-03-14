@@ -53,6 +53,31 @@ resource "aws_iam_role_policy" "ses_policy" {
   })
 }
 
+# IAM Policy for AWS Bedrock (Claude AI)
+resource "aws_iam_role_policy" "bedrock_policy" {
+  count = local.create_iam && var.enable_bedrock ? 1 : 0
+
+  name = "${var.environment}-bedrock-policy"
+  role = aws_iam_role.ec2_role[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "BedrockInvokeModel"
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream"
+        ]
+        Resource = [
+          "arn:aws:bedrock:*::foundation-model/anthropic.claude-*"
+        ]
+      }
+    ]
+  })
+}
+
 # IAM Instance Profile
 resource "aws_iam_instance_profile" "ec2_profile" {
   count = local.create_iam ? 1 : 0

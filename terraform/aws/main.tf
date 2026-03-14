@@ -278,6 +278,31 @@ resource "aws_iam_role_policy" "ses_send_email" {
   })
 }
 
+# AWS Bedrock policy for Claude AI (production only)
+resource "aws_iam_role_policy" "bedrock_invoke_model" {
+  count = var.enable_bedrock ? 1 : 0
+
+  name = "${var.environment}-bedrock-invoke-model"
+  role = aws_iam_role.ec2_app_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "BedrockInvokeModel"
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream"
+        ]
+        Resource = [
+          "arn:aws:bedrock:*::foundation-model/anthropic.claude-*"
+        ]
+      }
+    ]
+  })
+}
+
 # IAM instance profile
 resource "aws_iam_instance_profile" "ec2_app_profile" {
   name = "${var.environment}-ec2-app-profile"

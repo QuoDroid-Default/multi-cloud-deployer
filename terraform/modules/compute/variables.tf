@@ -15,4 +15,9 @@ variable "create_iam_instance_profile" {
   default     = true
   description = "Create IAM instance profile for EC2 instances with SES permissions"
 }
+variable "enable_bedrock" {
+  type        = bool
+  default     = false
+  description = "Enable AWS Bedrock permissions for Claude AI (production use)"
+}
 variable "tags" { type = map(string) }

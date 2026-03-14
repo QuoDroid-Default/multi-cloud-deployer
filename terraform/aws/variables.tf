@@ -218,3 +218,10 @@ variable "test_execution_memory" {
   type        = string
   default     = "2048"
 }
+
+# Bedrock (Claude AI) Variables
+variable "enable_bedrock" {
+  description = "Enable AWS Bedrock permissions for Claude AI (production use)"
+  type        = bool
+  default     = false
+}
