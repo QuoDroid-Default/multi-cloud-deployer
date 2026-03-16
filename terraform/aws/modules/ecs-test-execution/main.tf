@@ -7,10 +7,10 @@ terraform {
 
 # S3 bucket for test scripts and results
 resource "aws_s3_bucket" "test_execution" {
-  bucket = "${var.project_name}-test-execution-${var.environment}"
+  bucket = "${var.environment}-test-execution"
 
   tags = merge(var.tags, {
-    Name    = "${var.project_name}-test-execution"
+    Name    = "${var.environment}-test-execution"
     Purpose = "Test execution scripts and results"
   })
 }
@@ -101,7 +101,7 @@ resource "aws_cloudwatch_log_group" "test_runner" {
 
 # IAM role for task execution (used by ECS to pull images, write logs)
 resource "aws_iam_role" "task_execution_role" {
-  name = "${var.project_name}-test-execution-role-${var.environment}"
+  name = "${var.environment}-test-execution-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -124,7 +124,7 @@ resource "aws_iam_role_policy_attachment" "task_execution_role_policy" {
 
 # IAM role for task (used by the running container)
 resource "aws_iam_role" "task_role" {
-  name = "${var.project_name}-test-task-role-${var.environment}"
+  name = "${var.environment}-test-task-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -167,7 +167,7 @@ resource "aws_iam_role_policy" "task_s3_access" {
 
 # Security group for Fargate tasks
 resource "aws_security_group" "fargate_tasks" {
-  name        = "${var.project_name}-fargate-tasks-${var.environment}"
+  name        = "${var.environment}-fargate-tasks"
   description = "Security group for ECS Fargate test execution tasks"
   vpc_id      = var.vpc_id
 
@@ -181,13 +181,13 @@ resource "aws_security_group" "fargate_tasks" {
   }
 
   tags = merge(var.tags, {
-    Name = "${var.project_name}-fargate-tasks"
+    Name = "${var.environment}-fargate-tasks"
   })
 }
 
 # ECS Cluster
 resource "aws_ecs_cluster" "test_execution" {
-  name = "${var.project_name}-test-execution-${var.environment}"
+  name = "${var.environment}-test-execution"
 
   setting {
     name  = "containerInsights"
@@ -195,7 +195,7 @@ resource "aws_ecs_cluster" "test_execution" {
   }
 
   tags = merge(var.tags, {
-    Name    = "${var.project_name}-test-execution"
+    Name    = "${var.environment}-test-execution"
     Purpose = "Test execution cluster"
   })
 }
