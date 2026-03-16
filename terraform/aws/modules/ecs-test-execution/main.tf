@@ -56,7 +56,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "test_execution" {
 
 # ECR repository for test runner image
 resource "aws_ecr_repository" "test_runner" {
-  name                 = "${var.project_name}-test-runner"
+  name                 = "${var.environment}-test-runner"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
@@ -64,7 +64,7 @@ resource "aws_ecr_repository" "test_runner" {
   }
 
   tags = merge(var.tags, {
-    Name    = "${var.project_name}-test-runner"
+    Name    = "${var.environment}-test-runner"
     Purpose = "Playwright test runner container"
   })
 }
@@ -90,11 +90,11 @@ resource "aws_ecr_lifecycle_policy" "test_runner" {
 
 # CloudWatch log group for task logs
 resource "aws_cloudwatch_log_group" "test_runner" {
-  name              = "/ecs/${var.project_name}-test-runner"
+  name              = "/ecs/${var.environment}-test-runner"
   retention_in_days = 7  # Keep logs for 7 days
 
   tags = merge(var.tags, {
-    Name    = "${var.project_name}-test-runner-logs"
+    Name    = "${var.environment}-test-runner-logs"
     Purpose = "Test execution logs"
   })
 }
@@ -202,7 +202,7 @@ resource "aws_ecs_cluster" "test_execution" {
 
 # ECS Task Definition
 resource "aws_ecs_task_definition" "test_runner" {
-  family                   = "${var.project_name}-test-runner"
+  family                   = "${var.environment}-test-runner"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = var.default_cpu
