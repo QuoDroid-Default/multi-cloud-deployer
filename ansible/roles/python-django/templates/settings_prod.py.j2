@@ -27,5 +27,7 @@ DEBUG = False
 # Security settings for production
 SECURE_SSL_REDIRECT = False  # Nginx handles SSL termination
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SESSION_COOKIE_SECURE = False  # Set to True when using HTTPS
-CSRF_COOKIE_SECURE = False  # Set to True when using HTTPS
+
+# NOTE: SESSION_COOKIE_SECURE and CSRF_COOKIE_SECURE are configured in .env.prod
+# and loaded by base settings.py. Do NOT override them here.
+# For CloudFront deployments, they must be True to support SameSite=None cookies.
