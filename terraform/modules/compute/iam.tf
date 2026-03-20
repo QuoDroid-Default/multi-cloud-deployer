@@ -4,6 +4,11 @@ locals {
   create_iam = local.is_aws && var.create_iam_instance_profile
 }
 
+# Get AWS Account ID
+data "aws_caller_identity" "current" {
+  count = local.create_iam ? 1 : 0
+}
+
 # IAM Role for EC2 instances
 resource "aws_iam_role" "ec2_role" {
   count = local.create_iam ? 1 : 0
@@ -71,7 +76,8 @@ resource "aws_iam_role_policy" "bedrock_policy" {
           "bedrock:InvokeModelWithResponseStream"
         ]
         Resource = [
-          "arn:aws:bedrock:*::foundation-model/anthropic.claude-*"
+          "arn:aws:bedrock:*::foundation-model/anthropic.claude-*",
+          "arn:aws:bedrock:*:${data.aws_caller_identity.current[0].account_id}:inference-profile/us.anthropic.*"
         ]
       }
     ]
